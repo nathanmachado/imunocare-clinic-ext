@@ -7,6 +7,9 @@ app_license = "mit"
 
 required_apps = ["healthcare", "imunocare_core"]
 
+after_install = "imunocare_clinic_ext.install.load_pni_protocols"
+after_migrate = ["imunocare_clinic_ext.install.integrate_healthcare_workspace"]
+
 fixtures = [
     {"dt": "Custom Field", "filters": [["module", "=", "Imunocare Clinic Ext"]]},
     {"dt": "Protocolo de Imunizacao"},
