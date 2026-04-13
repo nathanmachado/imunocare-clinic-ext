@@ -1,0 +1,42 @@
+[
+ {
+  "doctype":"Custom Field","name":"Patient-cpf","module":"Imunocare Clinic Ext",
+  "dt":"Patient","fieldname":"cpf","label":"CPF",
+  "fieldtype":"Data","insert_after":"patient_name","in_list_view":0
+ },
+ {
+  "doctype":"Custom Field","name":"Patient-cartao_sus","module":"Imunocare Clinic Ext",
+  "dt":"Patient","fieldname":"cartao_sus","label":"Cartão SUS",
+  "fieldtype":"Data","insert_after":"cpf"
+ },
+ {
+  "doctype":"Custom Field","name":"Batch-imu_fabricante","module":"Imunocare Clinic Ext",
+  "dt":"Batch","fieldname":"imu_fabricante","label":"Fabricante",
+  "fieldtype":"Data","insert_after":"item"
+ },
+ {
+  "doctype":"Custom Field","name":"Batch-imu_registro_anvisa","module":"Imunocare Clinic Ext",
+  "dt":"Batch","fieldname":"imu_registro_anvisa","label":"Registro ANVISA",
+  "fieldtype":"Data","insert_after":"imu_fabricante"
+ },
+ {
+  "doctype":"Custom Field","name":"Batch-imu_qtd_inicial","module":"Imunocare Clinic Ext",
+  "dt":"Batch","fieldname":"imu_qtd_inicial","label":"Qtd Inicial (doses)",
+  "fieldtype":"Int","insert_after":"imu_registro_anvisa"
+ },
+ {
+  "doctype":"Custom Field","name":"Batch-imu_qtd_disponivel","module":"Imunocare Clinic Ext",
+  "dt":"Batch","fieldname":"imu_qtd_disponivel","label":"Qtd Disponível (doses)",
+  "fieldtype":"Int","insert_after":"imu_qtd_inicial","in_list_view":1
+ },
+ {
+  "doctype":"Custom Field","name":"Patient Appointment-tipo_servico","module":"Imunocare Clinic Ext",
+  "dt":"Patient Appointment","fieldname":"tipo_servico","label":"Tipo de Serviço",
+  "fieldtype":"Select","options":"\nVacinação\nConsulta\nRetorno\nExame","insert_after":"appointment_type","in_list_view":1
+ },
+ {
+  "doctype":"Custom Field","name":"Patient Appointment-protocolo_vacina","module":"Imunocare Clinic Ext",
+  "dt":"Patient Appointment","fieldname":"protocolo_vacina","label":"Protocolo de Vacina",
+  "fieldtype":"Link","options":"Protocolo de Imunizacao","insert_after":"tipo_servico"
+ }
+]

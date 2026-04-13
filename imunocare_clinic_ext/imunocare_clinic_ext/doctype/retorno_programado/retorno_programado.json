@@ -1,0 +1,44 @@
+{
+ "actions": [],
+ "creation": "2026-04-12 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "patient","patient_name","col1","data_retorno","status",
+  "sec_ref","aplicacao","protocolo","numero_dose",
+  "sec_contato","whatsapp","email_paciente","col2","lembrete_30d","lembrete_7d","lembrete_1d"
+ ],
+ "fields": [
+  {"fieldname":"patient","fieldtype":"Link","label":"Paciente","options":"Patient","reqd":1,"in_list_view":1},
+  {"fieldname":"patient_name","fieldtype":"Data","label":"Nome","fetch_from":"patient.patient_name","read_only":1,"in_list_view":1},
+  {"fieldname":"col1","fieldtype":"Column Break"},
+  {"fieldname":"data_retorno","fieldtype":"Date","label":"Data do Retorno","reqd":1,"in_list_view":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Pendente\nAgendado\nRealizado\nCancelado","default":"Pendente","in_list_view":1},
+  {"fieldname":"sec_ref","fieldtype":"Section Break","label":"Referência"},
+  {"fieldname":"aplicacao","fieldtype":"Link","label":"Aplicação Origem","options":"Aplicacao de Vacina"},
+  {"fieldname":"protocolo","fieldtype":"Link","label":"Protocolo","options":"Protocolo de Imunizacao"},
+  {"fieldname":"numero_dose","fieldtype":"Data","label":"Dose a Aplicar"},
+  {"fieldname":"sec_contato","fieldtype":"Section Break","label":"Lembretes"},
+  {"fieldname":"whatsapp","fieldtype":"Data","label":"WhatsApp do Paciente"},
+  {"fieldname":"email_paciente","fieldtype":"Data","label":"E-mail do Paciente"},
+  {"fieldname":"col2","fieldtype":"Column Break"},
+  {"fieldname":"lembrete_30d","fieldtype":"Check","label":"Lembrete 30 dias enviado","read_only":1},
+  {"fieldname":"lembrete_7d","fieldtype":"Check","label":"Lembrete 7 dias enviado","read_only":1},
+  {"fieldname":"lembrete_1d","fieldtype":"Check","label":"Lembrete 1 dia enviado","read_only":1}
+ ],
+ "links": [],
+ "modified": "2026-04-12 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Imunocare Clinic Ext",
+ "name": "Retorno Programado",
+ "naming_series": "RET-.YYYY.-.#####",
+ "owner": "Administrator",
+ "permissions": [
+  {"create":1,"delete":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"System Manager","share":1,"write":1},
+  {"create":1,"read":1,"write":1,"role":"Nursing User"},
+  {"read":1,"role":"Physician"}
+ ],
+ "sort_field": "data_retorno",
+ "sort_order": "ASC",
+ "track_changes": 1
+}

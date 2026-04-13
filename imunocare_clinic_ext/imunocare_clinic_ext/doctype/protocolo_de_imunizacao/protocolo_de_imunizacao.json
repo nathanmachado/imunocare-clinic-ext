@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-12 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "vacina_nome", "item_vacina", "col1",
+  "ativo", "campanha_ms",
+  "sec_doses", "doses",
+  "sec_info", "descricao"
+ ],
+ "fields": [
+  {"fieldname":"vacina_nome","fieldtype":"Data","label":"Nome da Vacina","reqd":1,"in_list_view":1},
+  {"fieldname":"item_vacina","fieldtype":"Link","label":"Item (Estoque)","options":"Item","in_list_view":1},
+  {"fieldname":"col1","fieldtype":"Column Break"},
+  {"fieldname":"ativo","fieldtype":"Check","label":"Ativo","default":"1","in_list_view":1},
+  {"fieldname":"campanha_ms","fieldtype":"Check","label":"Campanha Ministério da Saúde"},
+  {"fieldname":"sec_doses","fieldtype":"Section Break","label":"Doses e Intervalos"},
+  {"fieldname":"doses","fieldtype":"Table","label":"Doses","options":"Dose Protocolo"},
+  {"fieldname":"sec_info","fieldtype":"Section Break","label":"Informações"},
+  {"fieldname":"descricao","fieldtype":"Small Text","label":"Descrição / Indicação"}
+ ],
+ "links": [],
+ "modified": "2026-04-12 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Imunocare Clinic Ext",
+ "name": "Protocolo de Imunizacao",
+ "naming_rule": "By fieldname",
+ "autoname": "field:vacina_nome",
+ "owner": "Administrator",
+ "permissions": [
+  {"create":1,"delete":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"System Manager","share":1,"write":1},
+  {"read":1,"role":"Physician"},
+  {"read":1,"role":"Nursing User"}
+ ],
+ "sort_field": "vacina_nome",
+ "sort_order": "ASC",
+ "track_changes": 1
+}

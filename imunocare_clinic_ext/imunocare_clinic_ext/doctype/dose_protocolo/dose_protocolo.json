@@ -1,0 +1,31 @@
+{
+ "actions": [],
+ "creation": "2026-04-12 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": [
+  "numero_dose","label_dose","col1",
+  "faixa_etaria_inicio_meses","faixa_etaria_fim_meses","col2",
+  "intervalo_minimo_dias","intervalo_recomendado_dias"
+ ],
+ "fields": [
+  {"fieldname":"numero_dose","fieldtype":"Int","label":"Nº Dose","reqd":1,"in_list_view":1},
+  {"fieldname":"label_dose","fieldtype":"Data","label":"Rótulo","in_list_view":1,"description":"Ex: 1ª dose, Reforço, Anual"},
+  {"fieldname":"col1","fieldtype":"Column Break"},
+  {"fieldname":"faixa_etaria_inicio_meses","fieldtype":"Int","label":"Idade Mínima (meses)","in_list_view":1},
+  {"fieldname":"faixa_etaria_fim_meses","fieldtype":"Int","label":"Idade Máxima (meses)"},
+  {"fieldname":"col2","fieldtype":"Column Break"},
+  {"fieldname":"intervalo_minimo_dias","fieldtype":"Int","label":"Intervalo Mínimo (dias)"},
+  {"fieldname":"intervalo_recomendado_dias","fieldtype":"Int","label":"Intervalo Recomendado (dias)"}
+ ],
+ "links": [],
+ "modified": "2026-04-12 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Imunocare Clinic Ext",
+ "name": "Dose Protocolo",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "numero_dose",
+ "sort_order": "ASC"
+}

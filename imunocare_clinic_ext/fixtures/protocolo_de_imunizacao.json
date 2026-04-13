@@ -1,0 +1,124 @@
+[
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"BCG","ativo":1,"campanha_ms":1,
+  "descricao":"Tuberculose — dose única ao nascer (≤ 12 horas de vida).",
+  "doses":[{"numero_dose":1,"label_dose":"Dose Única","faixa_etaria_inicio_meses":0,"faixa_etaria_fim_meses":1}]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"Hepatite B","ativo":1,"campanha_ms":1,
+  "descricao":"Calendário: ao nascer, 2 meses, 6 meses.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"1ª dose","faixa_etaria_inicio_meses":0,"faixa_etaria_fim_meses":1,"intervalo_recomendado_dias":0},
+   {"numero_dose":2,"label_dose":"2ª dose","faixa_etaria_inicio_meses":2,"faixa_etaria_fim_meses":3,"intervalo_recomendado_dias":60},
+   {"numero_dose":3,"label_dose":"3ª dose","faixa_etaria_inicio_meses":6,"faixa_etaria_fim_meses":7,"intervalo_recomendado_dias":120}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"Pentavalente (DTP+Hib+HepB)","ativo":1,"campanha_ms":1,
+  "descricao":"DTP + Haemophilus influenzae b + Hepatite B — 3 doses + 2 reforços.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"1ª dose","faixa_etaria_inicio_meses":2,"intervalo_recomendado_dias":0},
+   {"numero_dose":2,"label_dose":"2ª dose","faixa_etaria_inicio_meses":4,"intervalo_recomendado_dias":60},
+   {"numero_dose":3,"label_dose":"3ª dose","faixa_etaria_inicio_meses":6,"intervalo_recomendado_dias":60},
+   {"numero_dose":4,"label_dose":"1º Reforço","faixa_etaria_inicio_meses":15,"intervalo_recomendado_dias":270},
+   {"numero_dose":5,"label_dose":"2º Reforço","faixa_etaria_inicio_meses":48,"intervalo_recomendado_dias":900}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"VIP (Poliomielite Inativada)","ativo":1,"campanha_ms":1,
+  "descricao":"3 doses injetáveis + reforços com VOP.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"1ª dose","faixa_etaria_inicio_meses":2,"intervalo_recomendado_dias":0},
+   {"numero_dose":2,"label_dose":"2ª dose","faixa_etaria_inicio_meses":4,"intervalo_recomendado_dias":60},
+   {"numero_dose":3,"label_dose":"3ª dose","faixa_etaria_inicio_meses":6,"intervalo_recomendado_dias":60}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"Pneumocócica 10V","ativo":1,"campanha_ms":1,
+  "descricao":"2 doses primárias + 1 reforço.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"1ª dose","faixa_etaria_inicio_meses":2,"intervalo_recomendado_dias":0},
+   {"numero_dose":2,"label_dose":"2ª dose","faixa_etaria_inicio_meses":4,"intervalo_recomendado_dias":60},
+   {"numero_dose":3,"label_dose":"Reforço","faixa_etaria_inicio_meses":12,"intervalo_recomendado_dias":240}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"Rotavírus Humano","ativo":1,"campanha_ms":1,
+  "descricao":"2 doses orais.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"1ª dose","faixa_etaria_inicio_meses":2,"intervalo_recomendado_dias":0},
+   {"numero_dose":2,"label_dose":"2ª dose","faixa_etaria_inicio_meses":4,"intervalo_recomendado_dias":60}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"Meningocócica C","ativo":1,"campanha_ms":1,
+  "descricao":"2 doses + reforço.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"1ª dose","faixa_etaria_inicio_meses":3,"intervalo_recomendado_dias":0},
+   {"numero_dose":2,"label_dose":"2ª dose","faixa_etaria_inicio_meses":5,"intervalo_recomendado_dias":60},
+   {"numero_dose":3,"label_dose":"Reforço","faixa_etaria_inicio_meses":12,"intervalo_recomendado_dias":210}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"Febre Amarela","ativo":1,"campanha_ms":1,
+  "descricao":"Dose única a partir dos 9 meses. Dose de reforço conforme indicação.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"Dose Única","faixa_etaria_inicio_meses":9,"intervalo_recomendado_dias":0}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"Tríplice Viral (SCR)","ativo":1,"campanha_ms":1,
+  "descricao":"Sarampo, Caxumba e Rubéola — 2 doses.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"1ª dose","faixa_etaria_inicio_meses":12,"intervalo_recomendado_dias":0},
+   {"numero_dose":2,"label_dose":"2ª dose","faixa_etaria_inicio_meses":15,"intervalo_recomendado_dias":90}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"Varicela","ativo":1,"campanha_ms":1,
+  "descricao":"2 doses.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"1ª dose","faixa_etaria_inicio_meses":15,"intervalo_recomendado_dias":0},
+   {"numero_dose":2,"label_dose":"2ª dose","faixa_etaria_inicio_meses":48,"intervalo_recomendado_dias":900}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"HPV Quadrivalente","ativo":1,"campanha_ms":1,
+  "descricao":"Meninas 9–14 anos: 2 doses (0 e 6 meses). Meninos 11–14 anos: 2 doses.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"1ª dose","faixa_etaria_inicio_meses":108,"intervalo_recomendado_dias":0},
+   {"numero_dose":2,"label_dose":"2ª dose","faixa_etaria_inicio_meses":114,"intervalo_recomendado_dias":180}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"Influenza","ativo":1,"campanha_ms":1,
+  "descricao":"Dose anual. Crianças < 9 anos na primeira vez: 2 doses com intervalo de 30 dias.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"Dose Anual","intervalo_recomendado_dias":365}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"COVID-19","ativo":1,"campanha_ms":1,
+  "descricao":"Esquema primário + reforços conforme protocolo MS vigente.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"1ª dose","intervalo_recomendado_dias":0},
+   {"numero_dose":2,"label_dose":"2ª dose","intervalo_recomendado_dias":28},
+   {"numero_dose":3,"label_dose":"1º Reforço","intervalo_recomendado_dias":120}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"Hepatite A","ativo":1,"campanha_ms":1,
+  "descricao":"2 doses com intervalo de 6 meses.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"1ª dose","faixa_etaria_inicio_meses":15,"intervalo_recomendado_dias":0},
+   {"numero_dose":2,"label_dose":"2ª dose","intervalo_recomendado_dias":180}
+  ]
+ },
+ {
+  "doctype":"Protocolo de Imunizacao","vacina_nome":"dTpa (Gestante)","ativo":1,"campanha_ms":1,
+  "descricao":"Gestantes a partir da 20ª semana — dose única a cada gestação.",
+  "doses":[
+   {"numero_dose":1,"label_dose":"Dose (gestação)","intervalo_recomendado_dias":0}
+  ]
+ }
+]

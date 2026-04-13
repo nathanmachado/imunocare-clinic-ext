@@ -5,10 +5,28 @@ app_description = "Extensão do Frappe Healthcare: calendário PNI BR e cartão 
 app_email = "tech@imunocare.com.br"
 app_license = "mit"
 
+required_apps = ["healthcare", "imunocare_core"]
+
+fixtures = [
+    {"dt": "Custom Field", "filters": [["module", "=", "Imunocare Clinic Ext"]]},
+    {"dt": "Protocolo de Imunizacao"},
+]
+
+doc_events = {
+    "Patient Appointment": {
+        "on_submit": "imunocare_clinic_ext.alerts.retornos.appointment_on_submit",
+    },
+}
+
+scheduler_events = {
+    "daily": [
+        "imunocare_clinic_ext.alerts.retornos.enviar_lembretes",
+        "imunocare_clinic_ext.alerts.estoque.verificar_lotes",
+    ],
+}
+
 # Apps
 # ------------------
-
-# required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
