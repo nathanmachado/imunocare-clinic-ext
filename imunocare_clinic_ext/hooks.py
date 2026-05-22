@@ -82,8 +82,24 @@ app_license = "mit"
 # Installation
 # ------------
 
-# before_install = "imunocare_clinic_ext.install.before_install"
-# after_install = "imunocare_clinic_ext.install.after_install"
+after_install = "imunocare_clinic_ext.install.after_install"
+after_migrate = "imunocare_clinic_ext.install.after_migrate"
+
+fixtures = [
+	{
+		"dt": "Custom Field",
+		"filters": [
+			["dt", "in", ["Medication", "Therapy Plan Template", "Therapy Plan Template Detail"]],
+			["fieldname", "in", [
+				"imun_section", "is_vaccine", "codigo_rnds", "tipo_imunizacao",
+				"imun_col_break", "via_administracao_padrao", "local_anatomico_padrao",
+				"obrigatoria_pni", "pni_idade_meses_inicio",
+				"is_pni", "versao_pni",
+				"medication", "dose_numero", "intervalo_dias_min", "idade_meses_ideal",
+			]],
+		],
+	},
+]
 
 # Uninstallation
 # ------------
