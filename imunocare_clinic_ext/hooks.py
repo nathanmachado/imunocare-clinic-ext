@@ -112,6 +112,14 @@ fixtures = [
 			]],
 		],
 	},
+	{
+		"dt": "Property Setter",
+		"filters": [
+			["doc_type", "=", "Patient"],
+			["field_name", "=", "uid"],
+			["property", "=", "hidden"],
+		],
+	},
 ]
 
 # Uninstallation

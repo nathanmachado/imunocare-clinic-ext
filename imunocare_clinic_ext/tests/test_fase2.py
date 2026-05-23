@@ -64,6 +64,22 @@ class TestCpfValidation(FrappeTestCase):
 		ro = frappe.db.get_value("Custom Field", {"dt": "Patient", "fieldname": "cns"}, "read_only")
 		self.assertEqual(ro, 1)
 
+	def test_cns_description(self):
+		desc = frappe.db.get_value("Custom Field", {"dt": "Patient", "fieldname": "cns"}, "description")
+		self.assertEqual(desc, "Atualizado automaticamente")
+
+	def test_cpf_has_no_description(self):
+		desc = frappe.db.get_value("Custom Field", {"dt": "Patient", "fieldname": "cpf"}, "description")
+		self.assertFalse(desc)
+
+	def test_native_uid_is_hidden(self):
+		hidden = frappe.db.get_value(
+			"Property Setter",
+			{"doc_type": "Patient", "field_name": "uid", "property": "hidden"},
+			"value",
+		)
+		self.assertEqual(hidden, "1")
+
 	def test_valid_cpf_passes_and_normalizes(self):
 		from imunocare_clinic_ext.patient_hooks import validate
 

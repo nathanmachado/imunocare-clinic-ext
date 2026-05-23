@@ -10,15 +10,24 @@ from __future__ import annotations
 
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 
 from imunocare_clinic_ext.custom_fields import CUSTOM_FIELDS
 
+# Campos nativos escondidos da UI por serem redundantes no contexto Imunocare.
+# (doctype, fieldname, property, value, property_type)
+HIDDEN_NATIVE_FIELDS = [
+	# UID genérico do Patient — CPF é o documento primário (ver ADR-0001).
+	("Patient", "uid", "hidden", "1", "Check"),
+]
+
 
 def install_imunization_customizations() -> None:
-	"""Instala/atualiza custom fields + seed PNI 2026 do domínio de imunização.
+	"""Instala/atualiza custom fields + property setters + seed PNI do domínio.
 
 	Idempotente:
 	- ``create_custom_fields`` faz upsert por (dt, fieldname).
+	- ``make_property_setter`` faz upsert por (doctype, field, property).
 	- ``seed_pni_2026`` checa existência antes de criar cada Item/Medication/
 	  Therapy Type/Therapy Plan Template.
 
@@ -26,12 +35,27 @@ def install_imunization_customizations() -> None:
 	o novo schema (campos como ``is_vaccine`` em Medication).
 	"""
 	create_custom_fields(CUSTOM_FIELDS, update=True)
+	_apply_property_setters()
 	frappe.clear_cache()
 
 	# Import tardio: seed precisa que os custom fields existam no schema.
 	from imunocare_clinic_ext.seed import seed_pni_2026
 
 	seed_pni_2026()
+
+
+def _apply_property_setters() -> None:
+	"""Aplica Property Setters em campos nativos (idempotente)."""
+	for doctype, fieldname, prop, value, prop_type in HIDDEN_NATIVE_FIELDS:
+		make_property_setter(
+			doctype,
+			fieldname,
+			prop,
+			value,
+			prop_type,
+			for_doctype=False,
+			validate_fields_for_doctype=False,
+		)
 
 
 def after_install() -> None:

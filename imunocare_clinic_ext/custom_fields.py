@@ -162,7 +162,7 @@ CUSTOM_FIELDS = {
 			"fieldtype": "Data",
 			"insert_after": "uid",
 			"unique": 1,
-			"description": "Documento primário de identificação. Armazenado só com dígitos (11). Validado pelas regras da Receita Federal. É a chave para resolver o CNS no RNDS (GET /patient).",
+			"description": "",
 		},
 		{
 			"fieldname": "cns",
@@ -170,7 +170,7 @@ CUSTOM_FIELDS = {
 			"fieldtype": "Data",
 			"insert_after": "cpf",
 			"read_only": 1,
-			"description": "Preenchido automaticamente a partir do CPF via consulta ao RNDS (Fase 4). Não precisa do cartão físico em mãos.",
+			"description": "Atualizado automaticamente",
 		},
 	],
 	"Drug Prescription": [
