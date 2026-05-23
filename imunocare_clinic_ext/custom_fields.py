@@ -177,7 +177,9 @@ CUSTOM_FIELDS = {
 			"fieldname": "imun_naturalidade_section",
 			"label": "Naturalidade",
 			"fieldtype": "Section Break",
-			"insert_after": "dob",
+			# Após o último campo da seção demográfica (user_id) para NÃO cortar
+			# "Patient Demographics" — senão cpf/mobile/phone/email vazam para cá.
+			"insert_after": "user_id",
 		},
 		{
 			"fieldname": "pais_nascimento",
@@ -197,7 +199,7 @@ CUSTOM_FIELDS = {
 		},
 		{
 			"fieldname": "imun_responsavel_section",
-			"label": "Responsável (menores de 18 anos)",
+			"label": "Responsável",
 			"fieldtype": "Section Break",
 			"insert_after": "cidade_nascimento",
 		},

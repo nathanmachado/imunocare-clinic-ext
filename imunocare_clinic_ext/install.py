@@ -27,6 +27,8 @@ NATIVE_PROPERTY_SETTERS = [
 	("Patient", "email", "reqd", "1", "Check"),
 	# Label sem "(opcional)" agora que middle_name é obrigatório.
 	("Patient", "middle_name", "label", "Nome do Meio", "Data"),
+	# Seção demográfica renomeada para "Paciente".
+	("Patient", "basic_info", "label", "Paciente", "Data"),
 ]
 
 

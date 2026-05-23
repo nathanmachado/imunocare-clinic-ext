@@ -118,7 +118,7 @@ fixtures = [
 		"dt": "Property Setter",
 		"filters": [
 			["doc_type", "=", "Patient"],
-			["field_name", "in", ["uid", "middle_name", "last_name", "dob", "mobile", "email"]],
+			["field_name", "in", ["uid", "middle_name", "last_name", "dob", "mobile", "email", "basic_info"]],
 			["property", "in", ["hidden", "reqd", "label"]],
 		],
 	},

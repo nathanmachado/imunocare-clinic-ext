@@ -124,6 +124,33 @@ class TestCpfValidation(FrappeTestCase):
 		)
 		self.assertEqual(label, "Nome do Meio")
 
+	def test_demographics_section_renamed_to_paciente(self):
+		label = frappe.db.get_value(
+			"Property Setter",
+			{"doc_type": "Patient", "field_name": "basic_info", "property": "label"},
+			"value",
+		)
+		self.assertEqual(label, "Paciente")
+
+	def test_responsavel_section_label(self):
+		label = frappe.db.get_value(
+			"Custom Field", {"dt": "Patient", "fieldname": "imun_responsavel_section"}, "label"
+		)
+		self.assertEqual(label, "Responsável")
+
+	def test_demographic_fields_inside_paciente_section(self):
+		"""cpf/mobile/phone/email devem ficar entre 'Paciente' e 'Naturalidade'."""
+		meta = frappe.get_meta("Patient")
+		order = [f.fieldname for f in meta.fields]
+		idx_paciente = order.index("basic_info")
+		idx_naturalidade = order.index("imun_naturalidade_section")
+		for fieldname in ("cpf", "mobile", "phone", "email"):
+			pos = order.index(fieldname)
+			self.assertTrue(
+				idx_paciente < pos < idx_naturalidade,
+				f"{fieldname} fora da seção Paciente",
+			)
+
 	def test_naturalidade_and_responsavel_fields(self):
 		for fieldname, reqd in (
 			("pais_nascimento", 1),
