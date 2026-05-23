@@ -102,7 +102,7 @@ fixtures = [
 				"is_pni", "versao_pni",
 				"medication", "dose_numero", "intervalo_dias_min", "idade_meses_ideal",
 				# Patient (Fase 2)
-				"cns",
+				"cpf", "cns",
 				# Drug Prescription (Fase 2)
 				"lote", "fabricante", "validade_lote",
 				"local_anatomico_aplicado", "via_administracao_aplicada",
@@ -167,6 +167,9 @@ fixtures = [
 # Hook on document methods and events
 
 doc_events = {
+	"Patient": {
+		"validate": "imunocare_clinic_ext.patient_hooks.validate",
+	},
 	"Patient Appointment": {
 		"before_save": "imunocare_clinic_ext.appointment_hooks.before_save",
 	},

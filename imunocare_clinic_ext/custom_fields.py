@@ -157,11 +157,20 @@ CUSTOM_FIELDS = {
 	# ---- Fase 2 ----
 	"Patient": [
 		{
+			"fieldname": "cpf",
+			"label": "CPF",
+			"fieldtype": "Data",
+			"insert_after": "uid",
+			"unique": 1,
+			"description": "Documento primário de identificação. Armazenado só com dígitos (11). Validado pelas regras da Receita Federal. É a chave para resolver o CNS no RNDS (GET /patient).",
+		},
+		{
 			"fieldname": "cns",
 			"label": "CNS (Cartão Nacional de Saúde)",
 			"fieldtype": "Data",
-			"insert_after": "uid",
-			"description": "Número do Cartão Nacional de Saúde (15 dígitos). Obrigatório para registro no RNDS.",
+			"insert_after": "cpf",
+			"read_only": 1,
+			"description": "Preenchido automaticamente a partir do CPF via consulta ao RNDS (Fase 4). Não precisa do cartão físico em mãos.",
 		},
 	],
 	"Drug Prescription": [

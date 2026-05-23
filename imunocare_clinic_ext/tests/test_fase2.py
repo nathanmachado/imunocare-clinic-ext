@@ -51,6 +51,50 @@ class TestFase2CustomFields(FrappeTestCase):
 			)
 
 
+class TestCpfValidation(FrappeTestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		install_imunization_customizations()
+
+	def test_cpf_field_installed(self):
+		self.assertTrue(frappe.db.exists("Custom Field", {"dt": "Patient", "fieldname": "cpf"}))
+
+	def test_cns_is_read_only(self):
+		ro = frappe.db.get_value("Custom Field", {"dt": "Patient", "fieldname": "cns"}, "read_only")
+		self.assertEqual(ro, 1)
+
+	def test_valid_cpf_passes_and_normalizes(self):
+		from imunocare_clinic_ext.patient_hooks import validate
+
+		# CPF válido conhecido, formatado
+		doc = frappe._dict(cpf="529.982.247-25")
+		validate(doc)
+		self.assertEqual(doc.cpf, "52998224725")  # normalizado para dígitos
+
+	def test_invalid_cpf_raises(self):
+		from imunocare_clinic_ext.patient_hooks import validate
+
+		for bad in ("111.111.111-11", "12345678900", "529.982.247-26", "123"):
+			with self.assertRaises(frappe.ValidationError):
+				validate(frappe._dict(cpf=bad))
+
+	def test_empty_cpf_is_allowed(self):
+		from imunocare_clinic_ext.patient_hooks import validate
+
+		doc = frappe._dict(cpf=None)
+		validate(doc)  # não levanta
+		self.assertIsNone(doc.get("cpf"))
+
+	def test_is_valid_cpf_helper(self):
+		from imunocare_clinic_ext.patient_hooks import is_valid_cpf
+
+		self.assertTrue(is_valid_cpf("52998224725"))
+		self.assertFalse(is_valid_cpf("11111111111"))
+		self.assertFalse(is_valid_cpf("529982247"))  # curto
+		self.assertFalse(is_valid_cpf("5299822472a"))  # não-dígito
+
+
 class TestVaccineCard(FrappeTestCase):
 	@classmethod
 	def setUpClass(cls):

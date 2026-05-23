@@ -38,8 +38,8 @@ Modelar o domínio de imunização **reusando ao máximo o Frappe Healthcare**, 
 | **Retornos pendentes (UI)** | Report builder query sobre `Medication Request WHERE expected_date <= TODAY AND status NOT IN (Completed, Cancelled)` | Sem novo DocType. Filtros nativos. |
 | **Modalidade / endereço / pagamento** | Custom fields em `Patient Appointment` + derivação de `ref_sales_invoice.status` | 2 custom fields + derivação. |
 | **Reação adversa** | **Novo DocType `Adverse Reaction`** linkando `drug_prescription` | Sem equivalente upstream. Semântica de reação precisa de filtros, gravidade, notificação ANVISA — flag em Patient Encounter ficaria fraca para relatórios. |
-| **Integração RNDS** | **Novo Single DocType `RNDS Settings`** (CNES, certificado A1, ambiente, OAuth tokens) + hook FHIR R4 em `Drug Prescription.after_insert` | Sem equivalente upstream. RNDS é específico do Brasil. |
-| **CNS do paciente** | Custom field em `Patient` | Necessário para RNDS. |
+| **Integração RNDS** | **Novo Single DocType `RNDS Settings`** (CNES, certificado A1, ambiente, OAuth tokens) + hook FHIR R4 em `Drug Prescription.after_insert` + `resolve_cns(cpf)` via `GET /patient` | Sem equivalente upstream. RNDS é específico do Brasil. |
+| **Identificação do paciente** | Custom fields `cpf` (primário, validado) + `cns` (read-only, derivado) em `Patient` | CPF é a chave; CNS resolvido via RNDS. Ver atualização "Identificação por CPF". |
 
 ### DocTypes verdadeiramente novos: 2
 
@@ -107,7 +107,7 @@ Conforme proposto e validado em 2026-05-22 (atualizado mesmo dia com Fase 7 dedi
 1. **Fase 1** (~3 dias): Custom fields em `Medication` + `Therapy Plan Template` + `Therapy Plan Template Detail`. Seed PNI inicial. **Concluída.**
 2. **Fase 2** (~5 dias): Custom fields em `Patient` (CNS) + `Drug Prescription` (lote, dose_numero, RNDS fields) + `Patient Appointment` (modalidade, endereço). Hook que popula endereço baseado em modalidade. Drug Prescription no Patient History Settings. Página "Carteira de Vacinação".
 3. **Fase 3** (~2 dias): DocType `Adverse Reaction` + integração com Patient History Settings.
-4. **Fase 4** (~7 dias): RNDS Settings + cliente FHIR R4 + auto-envio + retry scheduler.
+4. **Fase 4** (~7 dias): RNDS Settings + cliente FHIR R4 + auto-envio + retry scheduler + **`resolve_cns(cpf)`** via `GET /patient` (resolve e cacheia CNS a partir do CPF; botão "Buscar CNS" no Patient + hook opcional). Envio do `Immunization` usando **CPF** como identifier (CNS opcional).
 5. **Fase 5** (~4 dias): Treatment Plan Templates como combos comerciais + fluxo de venda + auto-criação de Medication Requests para doses futuras.
 6. **Fase 6** (~3 dias): Report "Retornos Pendentes" + dashboard.
 7. **Fase 7 (NOVA)** (~1 dia): **Adequação schema + helpers WhatsApp**. Valida que todos os campos requeridos pelos 5 templates HSM aprovados estão acessíveis. Implementa helpers `format_vaccine_list`, `format_appointment_for_whatsapp`, `format_dose_reminder_for_whatsapp`. Configura `imunocare_clinic_address_short` em site_config. Smoke tests manuais de extração de variáveis.
@@ -118,9 +118,32 @@ Por que Fase 7 dedicada: os 5 templates HSM dependem de variáveis em múltiplos
 
 Templates HSM já aprovados ([[project-whatsapp-templates]]). Pré-requisito mínimo de disparo (templates 1-4) destrancado em Fase 2; ciclo completo (template 5) destrancado em Fase 5; adequação final em Fase 7; produção em Fase 8.
 
+## Atualização — Identificação por CPF (2026-05-22)
+
+**Problema operacional:** a maioria dos pacientes não tem o cartão SUS (CNS) em mãos no momento da vacinação, gerando transtorno na recepção.
+
+**Investigação (documentação oficial RNDS/DATASUS):**
+1. O recurso FHIR `Immunization` do RNDS aceita o paciente identificado por **CPF OU CNS** — não exige o cartão. Identificador via `identifier.system` + `identifier.value`:
+   - CPF: `https://rnds-fhir.saude.gov.br/NamingSystem/cpf`
+   - CNS: `https://rnds-fhir.saude.gov.br/NamingSystem/cns`
+2. A RNDS expõe o serviço **`GET /patient`** (componente EHR Services) que **retorna o CNS a partir do CPF**. A consulta só aceita CPF como chave (RG, nome da mãe etc. ficam para "regulação futura").
+3. Pré-requisito comum a ambos: o documento (CPF/CNS) precisa estar no CADSUS — válido para a imensa maioria dos brasileiros.
+
+**Decisão:**
+- **CPF é o documento primário** de identificação do paciente (custom field `cpf` em `Patient`, `unique`, validado pelas regras da Receita Federal — dígitos verificadores; armazenado só com 11 dígitos para casar com o identifier FHIR).
+- **CNS vira derivado** (custom field `cns` read-only, auto-preenchido). Resolvido via `resolve_cns(cpf)` (`GET /patient`) na Fase 4; nunca exigido na recepção.
+- O envio de `Immunization` ao RNDS pode usar **CPF direto** como identifier — viável mesmo se o CNS nunca for resolvido.
+
+**Consequência:** elimina o gargalo do cartão físico; recepção opera só com CPF. RNDS viável desde o primeiro registro.
+
+**Implementado na Fase 2:** custom fields `cpf`/`cns`, validação em `patient_hooks.validate`, hook `Patient.validate` registrado. `resolve_cns` e envio FHIR ficam na Fase 4.
+
 ## Referências
 
 - Frappe Healthcare DocTypes: https://github.com/frappe/healthcare (v15.1.18)
 - PNI Brasil: https://www.gov.br/saude/pt-br/assuntos/saude-de-a-a-z/c/calendario-nacional-de-vacinacao
 - RNDS API: https://rnds-guia.saude.gov.br/
+- RNDS — Conheça os serviços (EHR Services / EHR Auth): https://rnds-guia.saude.gov.br/docs/publico-alvo/ti/conhecer/
+- NamingSystem CPF (RNDS FHIR): https://rnds-fhir.saude.gov.br/NamingSystem-cpf.html
+- Manual de Integração Barramento RNDS (DATASUS): https://datasus.saude.gov.br/wp-content/uploads/2020/04/SOA-RNDS_ManualIntegracaoBarramento_vSite.pdf
 - FHIR R4 Immunization: https://www.hl7.org/fhir/immunization.html
