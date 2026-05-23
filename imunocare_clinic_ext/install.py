@@ -14,11 +14,17 @@ from frappe.custom.doctype.property_setter.property_setter import make_property_
 
 from imunocare_clinic_ext.custom_fields import CUSTOM_FIELDS
 
-# Campos nativos escondidos da UI por serem redundantes no contexto Imunocare.
+# Property setters em campos NATIVOS (não são custom fields).
 # (doctype, fieldname, property, value, property_type)
-HIDDEN_NATIVE_FIELDS = [
+NATIVE_PROPERTY_SETTERS = [
 	# UID genérico do Patient — CPF é o documento primário (ver ADR-0001).
 	("Patient", "uid", "hidden", "1", "Check"),
+	# Campos obrigatórios no cadastro do paciente (first_name já é reqd nativo).
+	("Patient", "middle_name", "reqd", "1", "Check"),
+	("Patient", "last_name", "reqd", "1", "Check"),
+	("Patient", "dob", "reqd", "1", "Check"),
+	("Patient", "mobile", "reqd", "1", "Check"),
+	("Patient", "email", "reqd", "1", "Check"),
 ]
 
 
@@ -46,7 +52,7 @@ def install_imunization_customizations() -> None:
 
 def _apply_property_setters() -> None:
 	"""Aplica Property Setters em campos nativos (idempotente)."""
-	for doctype, fieldname, prop, value, prop_type in HIDDEN_NATIVE_FIELDS:
+	for doctype, fieldname, prop, value, prop_type in NATIVE_PROPERTY_SETTERS:
 		make_property_setter(
 			doctype,
 			fieldname,

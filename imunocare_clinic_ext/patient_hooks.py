@@ -1,11 +1,14 @@
-"""Hooks de Patient para o domínio de imunização (Fase 2 / ajuste CPF).
+"""Hooks de Patient para o domínio de imunização (Fase 2 / cadastro obrigatório).
 
 CPF é o documento primário de identificação (ADR-0001, atualização 2026-05-22).
 A maioria dos pacientes não tem o cartão SUS (CNS) em mãos na vacinação; o RNDS
 aceita CPF como identificador e resolve o CNS via GET /patient (Fase 4).
 
-Este hook valida o CPF (regras da Receita Federal) e o normaliza para 11 dígitos
-— formato exigido pelo identifier FHIR do RNDS.
+Validações server-side (não burláveis por API/import):
+- CPF do paciente e do responsável (regras da Receita Federal), normalizados.
+- Para menores de 18 anos: nome e CPF do responsável obrigatórios.
+- Endereço vinculado obrigatório (validado fora do primeiro insert — Address
+  só pode ser vinculado depois que o Patient existe).
 """
 
 from __future__ import annotations
@@ -14,20 +17,76 @@ import re
 
 import frappe
 from frappe import _
+from frappe.utils import getdate, nowdate
+
+MAIORIDADE = 18
 
 
 def validate(doc, method=None) -> None:
-	"""Valida e normaliza o CPF do paciente, se preenchido."""
-	cpf_raw = doc.get("cpf")
-	if not cpf_raw:
+	"""Valida CPF, responsável (menores) e endereço vinculado."""
+	_validate_and_normalize_cpf(doc, "cpf", _("CPF inválido: {0}"))
+	_validate_and_normalize_cpf(doc, "cpf_responsavel", _("CPF do responsável inválido: {0}"))
+	_validate_guardian(doc)
+	_validate_address(doc)
+
+
+def _validate_and_normalize_cpf(doc, fieldname: str, error_msg: str) -> None:
+	raw = doc.get(fieldname)
+	if not raw:
 		return
+	digits = re.sub(r"\D", "", raw)
+	if not is_valid_cpf(digits):
+		frappe.throw(error_msg.format(raw))
+	setattr(doc, fieldname, digits)
 
-	cpf_digits = re.sub(r"\D", "", cpf_raw)
-	if not is_valid_cpf(cpf_digits):
-		frappe.throw(_("CPF inválido: {0}").format(cpf_raw))
 
-	# Armazena só dígitos (padrão para o identifier FHIR do RNDS).
-	doc.cpf = cpf_digits
+def _validate_guardian(doc) -> None:
+	"""Exige nome + CPF do responsável para pacientes menores de 18 anos."""
+	idade = _idade_anos(doc.get("dob"))
+	if idade is None or idade >= MAIORIDADE:
+		return
+	if not doc.get("nome_responsavel"):
+		frappe.throw(_("Nome do responsável é obrigatório para pacientes menores de 18 anos."))
+	if not doc.get("cpf_responsavel"):
+		frappe.throw(_("CPF do responsável é obrigatório para pacientes menores de 18 anos."))
+
+
+def _validate_address(doc) -> None:
+	"""Exige ao menos um Address vinculado ao paciente.
+
+	Pulado no primeiro insert: o Address nativo só pode referenciar o Patient
+	depois que este existe (Dynamic Link precisa do nome do paciente). Em
+	qualquer save subsequente o endereço passa a ser obrigatório.
+	"""
+	if doc.is_new():
+		return
+	if not _has_address(doc.name):
+		frappe.throw(_("Endereço é obrigatório. Vincule um Endereço ao paciente."))
+
+
+def _has_address(patient: str) -> bool:
+	return bool(
+		frappe.get_all(
+			"Dynamic Link",
+			filters={
+				"link_doctype": "Patient",
+				"link_name": patient,
+				"parenttype": "Address",
+			},
+			limit=1,
+		)
+	)
+
+
+def _idade_anos(dob) -> int | None:
+	"""Idade exata em anos a partir do dob (None se ausente/futuro)."""
+	if not dob:
+		return None
+	nascimento = getdate(dob)
+	hoje = getdate(nowdate())
+	if nascimento > hoje:
+		return None
+	return hoje.year - nascimento.year - ((hoje.month, hoje.day) < (nascimento.month, nascimento.day))
 
 
 def is_valid_cpf(cpf: str) -> bool:

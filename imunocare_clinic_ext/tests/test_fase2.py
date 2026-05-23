@@ -13,13 +13,40 @@ from imunocare_clinic_ext.api.vaccine_card import (
 from imunocare_clinic_ext.install import install_imunization_customizations
 
 _PATIENT_MOBILE = "+5511933333333"
+_PATIENT_EMAIL = "bebe.teste.carteira@example.com"
+
+
+def _fake_doc(is_new=True, **fields):
+	"""Doc falso para testar hooks sem persistir (inclui .is_new())."""
+	d = frappe._dict(fields)
+	d.is_new = lambda: is_new
+	return d
+
+
+def _safe_delete(doctype, name):
+	try:
+		frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+	except Exception:
+		pass
 
 
 def _cleanup():
-	for enc in frappe.get_all("Patient Encounter", filters={"patient_name": "Bebê Teste Carteira"}, pluck="name"):
-		frappe.delete_doc("Patient Encounter", enc, force=True, ignore_permissions=True)
+	# Customer/Contact/User criados em cascata a partir do Patient não saem
+	# automaticamente; limpa tudo defensivamente para o teste ser idempotente.
+	for enc in frappe.get_all(
+		"Patient Encounter", filters={"patient_name": ("like", "Bebê Teste Carteira%")}, pluck="name"
+	):
+		_safe_delete("Patient Encounter", enc)
+	for cust in frappe.get_all(
+		"Customer", filters={"customer_name": ("like", "Bebê Teste Carteira%")}, pluck="name"
+	):
+		_safe_delete("Customer", cust)
+	for ct in frappe.get_all("Contact", filters={"email_id": _PATIENT_EMAIL}, pluck="name"):
+		_safe_delete("Contact", ct)
 	for pat in frappe.get_all("Patient", filters={"first_name": "Bebê Teste Carteira"}, pluck="name"):
-		frappe.delete_doc("Patient", pat, force=True, ignore_permissions=True)
+		_safe_delete("Patient", pat)
+	if frappe.db.exists("User", _PATIENT_EMAIL):
+		_safe_delete("User", _PATIENT_EMAIL)
 	frappe.db.commit()
 
 
@@ -80,11 +107,87 @@ class TestCpfValidation(FrappeTestCase):
 		)
 		self.assertEqual(hidden, "1")
 
+	def test_native_required_fields(self):
+		for fieldname in ("middle_name", "last_name", "dob", "mobile", "email"):
+			value = frappe.db.get_value(
+				"Property Setter",
+				{"doc_type": "Patient", "field_name": fieldname, "property": "reqd"},
+				"value",
+			)
+			self.assertEqual(value, "1", f"{fieldname} deveria ser obrigatório")
+
+	def test_naturalidade_and_responsavel_fields(self):
+		for fieldname, reqd in (
+			("pais_nascimento", 1),
+			("cidade_nascimento", 1),
+			("nome_responsavel", 0),
+			("cpf_responsavel", 0),
+		):
+			cf = frappe.db.get_value(
+				"Custom Field", {"dt": "Patient", "fieldname": fieldname}, ["reqd"], as_dict=True
+			)
+			self.assertIsNotNone(cf, f"Custom Field ausente: {fieldname}")
+			self.assertEqual(cf.reqd, reqd, f"reqd inesperado em {fieldname}")
+
+	def test_cpf_field_now_required(self):
+		reqd = frappe.db.get_value("Custom Field", {"dt": "Patient", "fieldname": "cpf"}, "reqd")
+		self.assertEqual(reqd, 1)
+
+
+class TestGuardianValidation(FrappeTestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		install_imunization_customizations()
+
+	def test_minor_requires_guardian(self):
+		from imunocare_clinic_ext.patient_hooks import _validate_guardian
+
+		# 5 anos → menor
+		minor = frappe._dict(dob=add_months(nowdate(), -60), nome_responsavel=None, cpf_responsavel=None)
+		with self.assertRaises(frappe.ValidationError):
+			_validate_guardian(minor)
+
+	def test_minor_with_guardian_passes(self):
+		from imunocare_clinic_ext.patient_hooks import _validate_guardian
+
+		minor = frappe._dict(
+			dob=add_months(nowdate(), -60),
+			nome_responsavel="Mãe Teste",
+			cpf_responsavel="52998224725",
+		)
+		_validate_guardian(minor)  # não levanta
+
+	def test_adult_does_not_require_guardian(self):
+		from imunocare_clinic_ext.patient_hooks import _validate_guardian
+
+		adult = frappe._dict(dob=add_months(nowdate(), -300), nome_responsavel=None, cpf_responsavel=None)
+		_validate_guardian(adult)  # não levanta
+
+	def test_guardian_cpf_validated(self):
+		from imunocare_clinic_ext.patient_hooks import validate
+
+		doc = _fake_doc(
+			dob=add_months(nowdate(), -60),
+			nome_responsavel="Pai Teste",
+			cpf_responsavel="111.111.111-11",  # inválido
+		)
+		with self.assertRaises(frappe.ValidationError):
+			validate(doc)
+
+	def test_idade_calculation_boundary(self):
+		from imunocare_clinic_ext.patient_hooks import _idade_anos
+
+		# Exatamente 18 anos hoje → adulto (não exige responsável)
+		self.assertEqual(_idade_anos(add_months(nowdate(), -18 * 12)), 18)
+		# 1 dia antes de completar 18 → 17
+		self.assertEqual(_idade_anos(add_months(nowdate(), -17 * 12)), 17)
+
 	def test_valid_cpf_passes_and_normalizes(self):
 		from imunocare_clinic_ext.patient_hooks import validate
 
 		# CPF válido conhecido, formatado
-		doc = frappe._dict(cpf="529.982.247-25")
+		doc = _fake_doc(cpf="529.982.247-25")
 		validate(doc)
 		self.assertEqual(doc.cpf, "52998224725")  # normalizado para dígitos
 
@@ -93,12 +196,12 @@ class TestCpfValidation(FrappeTestCase):
 
 		for bad in ("111.111.111-11", "12345678900", "529.982.247-26", "123"):
 			with self.assertRaises(frappe.ValidationError):
-				validate(frappe._dict(cpf=bad))
+				validate(_fake_doc(cpf=bad))
 
 	def test_empty_cpf_is_allowed(self):
 		from imunocare_clinic_ext.patient_hooks import validate
 
-		doc = frappe._dict(cpf=None)
+		doc = _fake_doc(cpf=None)
 		validate(doc)  # não levanta
 		self.assertIsNone(doc.get("cpf"))
 
@@ -118,13 +221,23 @@ class TestVaccineCard(FrappeTestCase):
 		install_imunization_customizations()
 		_cleanup()
 		# Paciente de 7 meses (dob = hoje - 7 meses)
+		# Bebê de 7 meses → menor de idade, exige responsável; preenche todos os
+		# campos obrigatórios do cadastro (middle/last name, email, cpf, naturalidade).
 		cls.patient = frappe.get_doc(
 			{
 				"doctype": "Patient",
 				"first_name": "Bebê Teste Carteira",
+				"middle_name": "da",
+				"last_name": "Silva",
 				"sex": "Female",
 				"dob": add_months(nowdate(), -7),
 				"mobile": _PATIENT_MOBILE,
+				"email": "bebe.teste.carteira@example.com",
+				"cpf": "52998224725",
+				"pais_nascimento": "Brazil",
+				"cidade_nascimento": "Uberlândia",
+				"nome_responsavel": "Responsável Teste",
+				"cpf_responsavel": "12345678909",
 				# Evita "Cannot select a Group type Customer Group" do default inválido
 				"customer_group": "Pessoa Física",
 			}

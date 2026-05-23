@@ -101,8 +101,10 @@ fixtures = [
 				# Therapy Plan Template (+ Detail) (Fase 1)
 				"is_pni", "versao_pni",
 				"medication", "dose_numero", "intervalo_dias_min", "idade_meses_ideal",
-				# Patient (Fase 2)
+				# Patient (Fase 2 + cadastro obrigatório)
 				"cpf", "cns",
+				"imun_naturalidade_section", "pais_nascimento", "cidade_nascimento",
+				"imun_responsavel_section", "nome_responsavel", "cpf_responsavel",
 				# Drug Prescription (Fase 2)
 				"lote", "fabricante", "validade_lote",
 				"local_anatomico_aplicado", "via_administracao_aplicada",
@@ -116,8 +118,8 @@ fixtures = [
 		"dt": "Property Setter",
 		"filters": [
 			["doc_type", "=", "Patient"],
-			["field_name", "=", "uid"],
-			["property", "=", "hidden"],
+			["field_name", "in", ["uid", "middle_name", "last_name", "dob", "mobile", "email"]],
+			["property", "in", ["hidden", "reqd"]],
 		],
 	},
 ]
