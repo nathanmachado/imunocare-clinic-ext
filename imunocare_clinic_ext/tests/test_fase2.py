@@ -124,6 +124,18 @@ class TestCpfValidation(FrappeTestCase):
 		)
 		self.assertEqual(label, "Nome do Meio")
 
+	def test_relabeled_native_fields(self):
+		for field_name, expected in (
+			("mobile", "Celular / Whatsapp"),
+			("report_preference", "Preferência de Relatório"),
+		):
+			label = frappe.db.get_value(
+				"Property Setter",
+				{"doc_type": "Patient", "field_name": field_name, "property": "label"},
+				"value",
+			)
+			self.assertEqual(label, expected)
+
 	def test_demographics_section_renamed_to_paciente(self):
 		label = frappe.db.get_value(
 			"Property Setter",

@@ -29,6 +29,9 @@ NATIVE_PROPERTY_SETTERS = [
 	("Patient", "middle_name", "label", "Nome do Meio", "Data"),
 	# Seção demográfica renomeada para "Paciente".
 	("Patient", "basic_info", "label", "Paciente", "Data"),
+	# Labels com termos mais claros / corrigindo tradução pt-BR ruim.
+	("Patient", "mobile", "label", "Celular / Whatsapp", "Data"),
+	("Patient", "report_preference", "label", "Preferência de Relatório", "Data"),
 ]
 
 
