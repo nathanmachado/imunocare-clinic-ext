@@ -25,6 +25,8 @@ NATIVE_PROPERTY_SETTERS = [
 	("Patient", "dob", "reqd", "1", "Check"),
 	("Patient", "mobile", "reqd", "1", "Check"),
 	("Patient", "email", "reqd", "1", "Check"),
+	# Label sem "(opcional)" agora que middle_name é obrigatório.
+	("Patient", "middle_name", "label", "Nome do Meio", "Data"),
 ]
 
 

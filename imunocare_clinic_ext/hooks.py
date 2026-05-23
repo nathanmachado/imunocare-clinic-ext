@@ -119,7 +119,7 @@ fixtures = [
 		"filters": [
 			["doc_type", "=", "Patient"],
 			["field_name", "in", ["uid", "middle_name", "last_name", "dob", "mobile", "email"]],
-			["property", "in", ["hidden", "reqd"]],
+			["property", "in", ["hidden", "reqd", "label"]],
 		],
 	},
 ]

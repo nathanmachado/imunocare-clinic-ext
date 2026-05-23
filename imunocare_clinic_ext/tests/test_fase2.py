@@ -116,6 +116,14 @@ class TestCpfValidation(FrappeTestCase):
 			)
 			self.assertEqual(value, "1", f"{fieldname} deveria ser obrigatório")
 
+	def test_middle_name_label_without_optional(self):
+		label = frappe.db.get_value(
+			"Property Setter",
+			{"doc_type": "Patient", "field_name": "middle_name", "property": "label"},
+			"value",
+		)
+		self.assertEqual(label, "Nome do Meio")
+
 	def test_naturalidade_and_responsavel_fields(self):
 		for fieldname, reqd in (
 			("pais_nascimento", 1),
