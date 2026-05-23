@@ -102,18 +102,21 @@ Modelar o domínio de imunização **reusando ao máximo o Frappe Healthcare**, 
 
 ## Faseamento de execução
 
-Conforme proposto e validado em 2026-05-22:
+Conforme proposto e validado em 2026-05-22 (atualizado mesmo dia com Fase 7 dedicada à adequação WhatsApp):
 
-1. **Fase 1** (~3 dias): Custom fields em `Medication` + `Therapy Plan Template` + `Therapy Plan Template Detail`. Fixture do PNI 2026 (lista de Medications-vacinas + Therapy Plan Templates por faixa etária).
-2. **Fase 2** (~5 dias): Custom fields em `Patient` (CNS) + `Drug Prescription` (lote, dose_numero, RNDS fields) + `Patient Appointment` (modalidade, endereço). Página "Carteira de Vacinação" Vue.
+1. **Fase 1** (~3 dias): Custom fields em `Medication` + `Therapy Plan Template` + `Therapy Plan Template Detail`. Seed PNI inicial. **Concluída.**
+2. **Fase 2** (~5 dias): Custom fields em `Patient` (CNS) + `Drug Prescription` (lote, dose_numero, RNDS fields) + `Patient Appointment` (modalidade, endereço). Hook que popula endereço baseado em modalidade. Drug Prescription no Patient History Settings. Página "Carteira de Vacinação".
 3. **Fase 3** (~2 dias): DocType `Adverse Reaction` + integração com Patient History Settings.
 4. **Fase 4** (~7 dias): RNDS Settings + cliente FHIR R4 + auto-envio + retry scheduler.
 5. **Fase 5** (~4 dias): Treatment Plan Templates como combos comerciais + fluxo de venda + auto-criação de Medication Requests para doses futuras.
 6. **Fase 6** (~3 dias): Report "Retornos Pendentes" + dashboard.
-7. **Fase 7** (~2 dias): Hooks WhatsApp templates (já APPROVED) + schedulers.
-8. **Fase 8** (contínuo): UX polish.
+7. **Fase 7 (NOVA)** (~1 dia): **Adequação schema + helpers WhatsApp**. Valida que todos os campos requeridos pelos 5 templates HSM aprovados estão acessíveis. Implementa helpers `format_vaccine_list`, `format_appointment_for_whatsapp`, `format_dose_reminder_for_whatsapp`. Configura `imunocare_clinic_address_short` em site_config. Smoke tests manuais de extração de variáveis.
+8. **Fase 8** (~2 dias, era Fase 7): Hooks `Patient Appointment.after_insert/on_update` + schedulers daily/weekly disparando templates HSM aprovados.
+9. **Fase 9** (contínuo, era Fase 8): UX polish.
 
-Templates HSM já estão aprovados ([[project-whatsapp-templates]]). Disparo automático destrancado após Fase 2 (em ~8 dias úteis acumulados).
+Por que Fase 7 dedicada: os 5 templates HSM dependem de variáveis em múltiplos DocTypes (Patient Appointment para 1-4, Medication Request para 5). Adequação só faz sentido quando todos campos existem — concentrar em uma fase evita dupla passada.
+
+Templates HSM já aprovados ([[project-whatsapp-templates]]). Pré-requisito mínimo de disparo (templates 1-4) destrancado em Fase 2; ciclo completo (template 5) destrancado em Fase 5; adequação final em Fase 7; produção em Fase 8.
 
 ## Referências
 

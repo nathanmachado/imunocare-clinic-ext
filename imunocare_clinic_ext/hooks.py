@@ -89,13 +89,26 @@ fixtures = [
 	{
 		"dt": "Custom Field",
 		"filters": [
-			["dt", "in", ["Medication", "Therapy Plan Template", "Therapy Plan Template Detail"]],
+			["dt", "in", [
+				"Medication", "Therapy Plan Template", "Therapy Plan Template Detail",
+				"Patient", "Drug Prescription", "Patient Appointment",
+			]],
 			["fieldname", "in", [
+				# Medication (Fase 1)
 				"imun_section", "is_vaccine", "codigo_rnds", "tipo_imunizacao",
 				"imun_col_break", "via_administracao_padrao", "local_anatomico_padrao",
 				"obrigatoria_pni", "pni_idade_meses_inicio",
+				# Therapy Plan Template (+ Detail) (Fase 1)
 				"is_pni", "versao_pni",
 				"medication", "dose_numero", "intervalo_dias_min", "idade_meses_ideal",
+				# Patient (Fase 2)
+				"cns",
+				# Drug Prescription (Fase 2)
+				"lote", "fabricante", "validade_lote",
+				"local_anatomico_aplicado", "via_administracao_aplicada",
+				"rnds_status", "rnds_id", "rnds_payload",
+				# Patient Appointment (Fase 2)
+				"imun_modalidade", "imun_application_address_display",
 			]],
 		],
 	},
@@ -153,13 +166,11 @@ fixtures = [
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Patient Appointment": {
+		"before_save": "imunocare_clinic_ext.appointment_hooks.before_save",
+	},
+}
 
 # Scheduled Tasks
 # ---------------

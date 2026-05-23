@@ -1,4 +1,4 @@
-"""Custom fields para o domínio de imunização — Fase 1 (ADR-0001).
+"""Custom fields para o domínio de imunização — Fases 1 e 2 (ADR-0001).
 
 Estende DocTypes nativos do Frappe Healthcare ao invés de criar paralelos.
 Aplicado por ``install.install_imunization_customizations`` chamado de
@@ -6,6 +6,10 @@ Aplicado por ``install.install_imunization_customizations`` chamado de
 
 Idempotente: ``frappe.custom.doctype.custom_field.custom_field.create_custom_fields``
 faz upsert por (dt, fieldname).
+
+- Fase 1: Medication, Therapy Plan Template, Therapy Plan Template Detail.
+- Fase 2: Patient (CNS), Drug Prescription (registro de aplicação + RNDS),
+  Patient Appointment (modalidade + endereço de aplicação).
 """
 
 from __future__ import annotations
@@ -19,6 +23,9 @@ LOCAL_OPTIONS = (
 	"Não se aplica"
 )
 TIPO_IMUNIZACAO_OPTIONS = "SUS\nParticular\nAmbas"
+RNDS_STATUS_OPTIONS = "Não aplicável\nPendente\nEnviado\nErro"
+# UI limpa; o helper WhatsApp (Fase 7) converte para "Atendimento CLÍNICA/DOMICILIAR".
+MODALIDADE_OPTIONS = "Clínica\nDomiciliar"
 
 CUSTOM_FIELDS = {
 	"Medication": [
@@ -145,6 +152,120 @@ CUSTOM_FIELDS = {
 			"fieldtype": "Int",
 			"insert_after": "intervalo_dias_min",
 			"description": "Idade ideal do paciente para esta dose, segundo PNI.",
+		},
+	],
+	# ---- Fase 2 ----
+	"Patient": [
+		{
+			"fieldname": "cns",
+			"label": "CNS (Cartão Nacional de Saúde)",
+			"fieldtype": "Data",
+			"insert_after": "uid",
+			"description": "Número do Cartão Nacional de Saúde (15 dígitos). Obrigatório para registro no RNDS.",
+		},
+	],
+	"Drug Prescription": [
+		{
+			"fieldname": "imun_section",
+			"label": "Registro de Aplicação (Imunização)",
+			"fieldtype": "Section Break",
+			"insert_after": "comment",
+			"collapsible": 1,
+			"depends_on": "eval:doc.medication",
+		},
+		{
+			"fieldname": "dose_numero",
+			"label": "Dose nº",
+			"fieldtype": "Int",
+			"insert_after": "imun_section",
+		},
+		{
+			"fieldname": "lote",
+			"label": "Lote",
+			"fieldtype": "Data",
+			"insert_after": "dose_numero",
+		},
+		{
+			"fieldname": "fabricante",
+			"label": "Fabricante",
+			"fieldtype": "Data",
+			"insert_after": "lote",
+		},
+		{
+			"fieldname": "validade_lote",
+			"label": "Validade do lote",
+			"fieldtype": "Date",
+			"insert_after": "fabricante",
+		},
+		{
+			"fieldname": "imun_col_break",
+			"fieldtype": "Column Break",
+			"insert_after": "validade_lote",
+		},
+		{
+			"fieldname": "local_anatomico_aplicado",
+			"label": "Local anatômico aplicado",
+			"fieldtype": "Select",
+			"options": LOCAL_OPTIONS,
+			"insert_after": "imun_col_break",
+		},
+		{
+			"fieldname": "via_administracao_aplicada",
+			"label": "Via de administração aplicada",
+			"fieldtype": "Select",
+			"options": VIA_OPTIONS,
+			"insert_after": "local_anatomico_aplicado",
+		},
+		{
+			"fieldname": "rnds_status",
+			"label": "Status RNDS",
+			"fieldtype": "Select",
+			"options": RNDS_STATUS_OPTIONS,
+			"default": "Não aplicável",
+			"insert_after": "via_administracao_aplicada",
+			"read_only": 1,
+			"description": "Atualizado automaticamente pelo envio ao RNDS (Fase 4).",
+		},
+		{
+			"fieldname": "rnds_id",
+			"label": "RNDS ID",
+			"fieldtype": "Data",
+			"insert_after": "rnds_status",
+			"read_only": 1,
+		},
+		{
+			"fieldname": "rnds_payload",
+			"label": "RNDS Payload (debug)",
+			"fieldtype": "Long Text",
+			"insert_after": "rnds_id",
+			"read_only": 1,
+			"hidden": 1,
+		},
+	],
+	"Patient Appointment": [
+		{
+			"fieldname": "imun_section",
+			"label": "Imunização",
+			"fieldtype": "Section Break",
+			"insert_after": "notes",
+			"collapsible": 1,
+		},
+		{
+			"fieldname": "imun_modalidade",
+			"label": "Modalidade",
+			"fieldtype": "Select",
+			"options": MODALIDADE_OPTIONS,
+			"default": "Clínica",
+			"insert_after": "imun_section",
+		},
+		{
+			"fieldname": "imun_application_address_display",
+			"label": "Endereço de aplicação",
+			"fieldtype": "Data",
+			"insert_after": "imun_modalidade",
+			"read_only": 1,
+			"length": 140,
+			"description": "Preenchido automaticamente: endereço da clínica (modalidade Clínica) ou do paciente (Domiciliar).",
 		},
 	],
 }
