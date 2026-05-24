@@ -20,14 +20,17 @@ from frappe.model.document import Document
 from frappe.utils.password import decrypt, encrypt
 
 # Endpoints oficiais por ambiente (editáveis no DocType; defaults sugeridos).
+# Homologação é nacional. Em produção o token é nacional, mas o EHR Services é
+# por UF — o default abaixo é o de Minas Gerais (mg-), onde a clínica opera;
+# ajustar o prefixo da UF se mudar de estado.
 DEFAULT_ENDPOINTS = {
 	"Homologação": {
 		"token": "https://ehr-auth-hmg.saude.gov.br/api/token",
-		"ehr": "https://ehr-services-hmg.saude.gov.br/api/fhir/r4",
+		"ehr": "https://ehr-services.hmg.saude.gov.br/api/fhir/r4",
 	},
 	"Produção": {
 		"token": "https://ehr-auth.saude.gov.br/api/token",
-		"ehr": "https://ehr-services.saude.gov.br/api/fhir/r4",
+		"ehr": "https://mg-ehr-services.saude.gov.br/api/fhir/r4",
 	},
 }
 
