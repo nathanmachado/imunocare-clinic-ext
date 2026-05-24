@@ -330,4 +330,39 @@ CUSTOM_FIELDS = {
 			"description": "Vacinas planejadas para este atendimento (fonte da variável de vacinas dos templates WhatsApp).",
 		},
 	],
+	# ---- Fase 5 ----
+	"Treatment Plan Template": [
+		{
+			"fieldname": "is_vaccine_combo",
+			"label": "Combo de vacinas",
+			"fieldtype": "Check",
+			"default": "0",
+			"insert_after": "template_name",
+			"description": "Marque para combos comerciais de vacinas (ex.: Meningite B 3 doses).",
+		},
+		{
+			"fieldname": "vaccination_schedule",
+			"label": "Esquema vacinal (calendário)",
+			"fieldtype": "Link",
+			"options": "Therapy Plan Template",
+			"depends_on": "eval:doc.is_vaccine_combo",
+			"insert_after": "is_vaccine_combo",
+			"description": "Calendário biológico (Therapy Plan Template is_pni) cujas doses serão agendadas na compra.",
+		},
+	],
+	"Medication Request": [
+		{
+			"fieldname": "dose_numero",
+			"label": "Dose nº",
+			"fieldtype": "Int",
+			"insert_after": "medication",
+		},
+		{
+			"fieldname": "therapy_plan",
+			"label": "Plano de Tratamento (compra)",
+			"fieldtype": "Link",
+			"options": "Therapy Plan",
+			"insert_after": "dose_numero",
+		},
+	],
 }

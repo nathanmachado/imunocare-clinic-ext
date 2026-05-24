@@ -7,8 +7,7 @@ hooks/schedulers) fica no imunocare_crm_custom (Fase 8).
 Templates cobertos aqui:
 - confirmacao_agendamento / lembrete_agendamento_d1 / reagendamento (7 vars do
   Patient Appointment) → get_appointment_whatsapp_params.
-- lembrete_reforco_dose (3 vars) depende de Medication Request (Fase 5) — fica
-  pendente até lá.
+- lembrete_reforco_dose (3 vars, Medication Request) → get_dose_reminder_whatsapp_params.
 
 Strings de modalidade/pagamento batem exatamente com os exemplos submetidos à
 Meta (ver project-whatsapp-templates).
@@ -17,7 +16,7 @@ Meta (ver project-whatsapp-templates).
 from __future__ import annotations
 
 import frappe
-from frappe.utils import formatdate, get_time
+from frappe.utils import formatdate, get_time, getdate
 
 _MODALIDADE_MAP = {
 	"Clínica": "Atendimento CLÍNICA",
@@ -92,4 +91,30 @@ def get_appointment_whatsapp_params(appointment_name: str) -> dict:
 		"modalidade": modalidade_label(appt.get("imun_modalidade")),
 		"endereco": appt.get("imun_application_address_display") or "",
 		"pagamento": payment_status_label(appt),
+	}
+
+
+def _dose_label(medication: str, dose_numero: int | None) -> str:
+	"""'Hepatite B (3ª dose)' a partir da vacina e do número da dose."""
+	if dose_numero:
+		return f"{medication} ({dose_numero}ª dose)"
+	return medication
+
+
+def get_dose_reminder_whatsapp_params(patient_name: str, medication_requests: list[str]) -> dict:
+	"""Variáveis do template lembrete_reforco_dose (Fase 5/8).
+
+	Recebe o nome do paciente e os Medication Requests de doses pendentes.
+	Retorna::
+
+	    {{1}} nome · {{2}} doses (lista) · {{3}} prazo sugerido (menor expected_date)
+	"""
+	docs = [frappe.get_doc("Medication Request", mr) for mr in medication_requests]
+	doses = [_dose_label(d.get("medication"), d.get("dose_numero")) for d in docs]
+	datas = [getdate(d.get("expected_date")) for d in docs if d.get("expected_date")]
+	prazo = formatdate(min(datas), "dd/MM/yyyy") if datas else ""
+	return {
+		"nome": patient_name or "",
+		"doses": format_vaccine_list(doses),
+		"prazo": prazo,
 	}

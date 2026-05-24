@@ -92,6 +92,7 @@ fixtures = [
 			["dt", "in", [
 				"Medication", "Therapy Plan Template", "Therapy Plan Template Detail",
 				"Patient", "Drug Prescription", "Patient Appointment",
+				"Treatment Plan Template", "Medication Request",
 			]],
 			["fieldname", "in", [
 				# Medication (Fase 1)
@@ -111,6 +112,8 @@ fixtures = [
 				"rnds_status", "rnds_id", "rnds_payload",
 				# Patient Appointment (Fase 2 + Fase 7)
 				"imun_modalidade", "imun_application_address_display", "imun_vaccines",
+				# Treatment Plan Template + Medication Request (Fase 5)
+				"is_vaccine_combo", "vaccination_schedule", "therapy_plan",
 			]],
 		],
 	},
