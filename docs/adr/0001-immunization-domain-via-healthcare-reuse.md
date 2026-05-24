@@ -106,7 +106,7 @@ Conforme proposto e validado em 2026-05-22 (atualizado mesmo dia com Fase 7 dedi
 
 1. **Fase 1** (~3 dias): Custom fields em `Medication` + `Therapy Plan Template` + `Therapy Plan Template Detail`. Seed PNI inicial. **Concluída.**
 2. **Fase 2** (~5 dias): Custom fields em `Patient` (CNS) + `Drug Prescription` (lote, dose_numero, RNDS fields) + `Patient Appointment` (modalidade, endereço). Hook que popula endereço baseado em modalidade. Drug Prescription no Patient History Settings. Página "Carteira de Vacinação".
-3. **Fase 3** (~2 dias): DocType `Adverse Reaction` + integração com Patient History Settings.
+3. **Fase 3** (~2 dias): DocType `Adverse Reaction` (ESAVI) + integração com Patient History Settings. **Concluída.** DocType **submittable** (requisito do Patient Medical Record para entrar na timeline); série `ESAVI-.YYYY.-`; campos de gravidade/sintomas/desfecho/notificação ANVISA; alerta de notificação compulsória para reações Graves. **Pegadinha**: doctypes de app vão no diretório do MÓDULO (`<app>/<app>/<module>/doctype/`), não no pacote do app.
 4. **Fase 4** (~7 dias): RNDS Settings + cliente FHIR R4 + auto-envio + retry scheduler + **`resolve_cns(cpf)`** via `GET /patient` (resolve e cacheia CNS a partir do CPF; botão "Buscar CNS" no Patient + hook opcional). Envio do `Immunization` usando **CPF** como identifier (CNS opcional).
 5. **Fase 5** (~4 dias): Treatment Plan Templates como combos comerciais + fluxo de venda + auto-criação de Medication Requests para doses futuras.
 6. **Fase 6** (~3 dias): Report "Retornos Pendentes" + dashboard.

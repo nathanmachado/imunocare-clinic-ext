@@ -49,6 +49,7 @@ def install_imunization_customizations() -> None:
 	"""
 	create_custom_fields(CUSTOM_FIELDS, update=True)
 	_apply_property_setters()
+	_register_patient_history_doctypes()
 	frappe.clear_cache()
 
 	# Import tardio: seed precisa que os custom fields existam no schema.
@@ -69,6 +70,40 @@ def _apply_property_setters() -> None:
 			for_doctype=False,
 			validate_fields_for_doctype=False,
 		)
+
+
+def _register_patient_history_doctypes() -> None:
+	"""Adiciona Adverse Reaction à timeline do paciente (Patient History).
+
+	Idempotente: só insere a linha em ``custom_doctypes`` se ainda não existir.
+	Pulado se o DocType ainda não foi migrado (primeira passada do install).
+	"""
+	if not frappe.db.exists("DocType", "Adverse Reaction"):
+		return
+	if not frappe.db.exists("DocType", "Patient History Settings"):
+		return
+
+	settings = frappe.get_single("Patient History Settings")
+	already = any(d.document_type == "Adverse Reaction" for d in settings.custom_doctypes)
+	if already:
+		return
+
+	settings.append(
+		"custom_doctypes",
+		{
+			"document_type": "Adverse Reaction",
+			"date_fieldname": "data_inicio",
+			"selected_fields": frappe.as_json(
+				[
+					{"label": "Gravidade", "fieldname": "gravidade", "fieldtype": "Select"},
+					{"label": "Sintomas", "fieldname": "sintomas", "fieldtype": "Small Text"},
+					{"label": "Vacina/Medicação suspeita", "fieldname": "medication", "fieldtype": "Link"},
+					{"label": "Desfecho", "fieldname": "desfecho", "fieldtype": "Select"},
+				]
+			),
+		},
+	)
+	settings.save(ignore_permissions=True)
 
 
 def after_install() -> None:

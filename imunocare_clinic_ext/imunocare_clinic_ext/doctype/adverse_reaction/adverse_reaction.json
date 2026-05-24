@@ -1,0 +1,219 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-05-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "is_submittable": 1,
+ "field_order": [
+  "naming_series",
+  "patient",
+  "patient_name",
+  "column_break_event",
+  "data_inicio",
+  "gravidade",
+  "aplicacao_section",
+  "patient_encounter",
+  "medication",
+  "column_break_aplic",
+  "lote",
+  "dose_numero",
+  "evento_section",
+  "sintomas",
+  "acao_tomada",
+  "desfecho",
+  "anvisa_section",
+  "notificada_anvisa",
+  "data_notificacao",
+  "numero_notificacao"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Série",
+   "options": "ESAVI-.YYYY.-",
+   "default": "ESAVI-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "patient",
+   "fieldtype": "Link",
+   "label": "Paciente",
+   "options": "Patient",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "patient_name",
+   "fieldtype": "Data",
+   "label": "Nome do Paciente",
+   "fetch_from": "patient.patient_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_event",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "data_inicio",
+   "fieldtype": "Datetime",
+   "label": "Início dos sintomas",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "gravidade",
+   "fieldtype": "Select",
+   "label": "Gravidade",
+   "options": "Leve\nModerada\nGrave",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "aplicacao_section",
+   "fieldtype": "Section Break",
+   "label": "Aplicação relacionada"
+  },
+  {
+   "fieldname": "patient_encounter",
+   "fieldtype": "Link",
+   "label": "Atendimento (Patient Encounter)",
+   "options": "Patient Encounter"
+  },
+  {
+   "fieldname": "medication",
+   "fieldtype": "Link",
+   "label": "Vacina/Medicação suspeita",
+   "options": "Medication"
+  },
+  {
+   "fieldname": "column_break_aplic",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lote",
+   "fieldtype": "Data",
+   "label": "Lote"
+  },
+  {
+   "fieldname": "dose_numero",
+   "fieldtype": "Int",
+   "label": "Dose nº"
+  },
+  {
+   "fieldname": "evento_section",
+   "fieldtype": "Section Break",
+   "label": "Evento"
+  },
+  {
+   "fieldname": "sintomas",
+   "fieldtype": "Small Text",
+   "label": "Sintomas",
+   "reqd": 1
+  },
+  {
+   "fieldname": "acao_tomada",
+   "fieldtype": "Small Text",
+   "label": "Conduta / ação tomada"
+  },
+  {
+   "fieldname": "desfecho",
+   "fieldtype": "Select",
+   "label": "Desfecho",
+   "options": "Em acompanhamento\nResolvido\nResolvido com sequelas\nÓbito\nDesconhecido",
+   "default": "Em acompanhamento"
+  },
+  {
+   "fieldname": "anvisa_section",
+   "fieldtype": "Section Break",
+   "label": "Notificação ANVISA (VigiMed)"
+  },
+  {
+   "fieldname": "notificada_anvisa",
+   "fieldtype": "Check",
+   "label": "Notificada à ANVISA",
+   "default": "0"
+  },
+  {
+   "fieldname": "data_notificacao",
+   "fieldtype": "Date",
+   "label": "Data da notificação",
+   "depends_on": "eval:doc.notificada_anvisa"
+  },
+  {
+   "fieldname": "numero_notificacao",
+   "fieldtype": "Data",
+   "label": "Protocolo VigiMed",
+   "depends_on": "eval:doc.notificada_anvisa"
+  }
+ ],
+ "links": [],
+ "modified": "2026-05-23 00:00:00.000000",
+ "module": "Imunocare Clinic Ext",
+ "name": "Adverse Reaction",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Healthcare Administrator",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Physician",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nursing User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
