@@ -26,6 +26,30 @@ def before_save(doc, method=None) -> None:
 		doc.imun_application_address_display = _clinic_address()
 
 
+def after_insert(doc, method=None) -> None:
+	"""Enfileira (sem enviar) a confirmação de agendamento para autorização."""
+	if not doc.get("imun_vaccines"):
+		return
+	from imunocare_clinic_ext.dispatch import enfileirar_para_appointment
+
+	enfileirar_para_appointment(doc.name, "Confirmação de agendamento")
+
+
+def on_update(doc, method=None) -> None:
+	"""Enfileira reagendamento quando data ou hora mudam em um doc já existente."""
+	if doc.is_new() or not doc.get("imun_vaccines"):
+		return
+	before = doc.get_doc_before_save()
+	if not before:
+		return
+	if (before.get("appointment_date") == doc.get("appointment_date")
+			and before.get("appointment_time") == doc.get("appointment_time")):
+		return
+	from imunocare_clinic_ext.dispatch import enfileirar_para_appointment
+
+	enfileirar_para_appointment(doc.name, "Reagendamento")
+
+
 def _clinic_address() -> str:
 	"""Endereço curto da clínica vindo de site_config (fallback hardcoded)."""
 	return frappe.conf.get("imunocare_clinic_address_short") or _DEFAULT_CLINIC_ADDRESS

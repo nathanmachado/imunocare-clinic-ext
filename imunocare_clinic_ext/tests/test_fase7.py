@@ -17,6 +17,11 @@ _CPF = "15350946056"  # CPF válido para teste
 
 
 def _cleanup():
+	for wd in frappe.get_all("WhatsApp Dispatch", filters={"to": _MOBILE}, pluck="name"):
+		try:
+			frappe.delete_doc("WhatsApp Dispatch", wd, force=True, ignore_permissions=True)
+		except Exception:
+			pass
 	for ap in frappe.get_all("Patient Appointment", filters={"patient_name": ("like", "WPP Teste%")}, pluck="name"):
 		try:
 			frappe.delete_doc("Patient Appointment", ap, force=True, ignore_permissions=True)

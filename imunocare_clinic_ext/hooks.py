@@ -188,7 +188,16 @@ doc_events = {
 	},
 	"Patient Appointment": {
 		"before_save": "imunocare_clinic_ext.appointment_hooks.before_save",
+		"after_insert": "imunocare_clinic_ext.appointment_hooks.after_insert",
+		"on_update": "imunocare_clinic_ext.appointment_hooks.on_update",
 	},
+}
+
+scheduler_events = {
+	"daily": [
+		"imunocare_clinic_ext.tasks.enfileirar_lembretes_d1",
+		"imunocare_clinic_ext.tasks.enfileirar_lembretes_reforco",
+	],
 }
 
 # Scheduled Tasks
