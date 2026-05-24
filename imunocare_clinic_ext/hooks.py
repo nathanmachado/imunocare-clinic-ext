@@ -109,8 +109,8 @@ fixtures = [
 				"lote", "fabricante", "validade_lote",
 				"local_anatomico_aplicado", "via_administracao_aplicada",
 				"rnds_status", "rnds_id", "rnds_payload",
-				# Patient Appointment (Fase 2)
-				"imun_modalidade", "imun_application_address_display",
+				# Patient Appointment (Fase 2 + Fase 7)
+				"imun_modalidade", "imun_application_address_display", "imun_vaccines",
 			]],
 		],
 	},

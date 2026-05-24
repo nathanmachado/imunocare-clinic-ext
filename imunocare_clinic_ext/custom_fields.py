@@ -321,5 +321,13 @@ CUSTOM_FIELDS = {
 			"length": 140,
 			"description": "Preenchido automaticamente: endereço da clínica (modalidade Clínica) ou do paciente (Domiciliar).",
 		},
+		{
+			"fieldname": "imun_vaccines",
+			"label": "Vacinas do agendamento",
+			"fieldtype": "Table",
+			"options": "Imunocare Appointment Vaccine",
+			"insert_after": "imun_application_address_display",
+			"description": "Vacinas planejadas para este atendimento (fonte da variável de vacinas dos templates WhatsApp).",
+		},
 	],
 }

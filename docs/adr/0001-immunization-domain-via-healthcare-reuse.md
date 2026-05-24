@@ -41,10 +41,11 @@ Modelar o domínio de imunização **reusando ao máximo o Frappe Healthcare**, 
 | **Integração RNDS** | **Novo Single DocType `RNDS Settings`** (CNES, certificado A1, ambiente, OAuth tokens) + hook FHIR R4 em `Drug Prescription.after_insert` + `resolve_cns(cpf)` via `GET /patient` | Sem equivalente upstream. RNDS é específico do Brasil. |
 | **Identificação do paciente** | Custom fields `cpf` (primário, validado) + `cns` (read-only, derivado) em `Patient` | CPF é a chave; CNS resolvido via RNDS. Ver atualização "Identificação por CPF". |
 
-### DocTypes verdadeiramente novos: 2
+### DocTypes verdadeiramente novos: 3 (revisado na Fase 7)
 
-1. **`Adverse Reaction`** — link drug_prescription, sintomas (child), gravidade, data_inicio, ação tomada, notificada_anvisa.
-2. **`RNDS Settings`** (Single) — CNES, certificado A1, ambiente, OAuth tokens cached.
+1. **`Adverse Reaction`** — link drug_prescription, sintomas, gravidade, data_inicio, ação tomada, notificada_anvisa. (Fase 3)
+2. **`RNDS Settings`** (Single) — CNES, certificado A1, ambiente, OAuth tokens cached. (Fase 4)
+3. **`Imunocare Appointment Vaccine`** (child) — vacinas planejadas de um Patient Appointment. Adicionado na Fase 7: os templates HSM de agendamento precisam da variável de vacinas, e não havia fonte para "vacinas deste agendamento" antes da aplicação. É distinto do `Medication Request` (Fase 5 = doses futuras de pacote); esta child representa "o que será aplicado neste atendimento". Custom field Table `imun_vaccines` em Patient Appointment.
 
 ### Custom fields: 18 distribuídos
 
@@ -110,7 +111,7 @@ Conforme proposto e validado em 2026-05-22 (atualizado mesmo dia com Fase 7 dedi
 4. **Fase 4** (~7 dias): RNDS Settings + cliente FHIR R4 + auto-envio + retry scheduler + **`resolve_cns(cpf)`** via `GET /patient` (resolve e cacheia CNS a partir do CPF; botão "Buscar CNS" no Patient + hook opcional). Envio do `Immunization` usando **CPF** como identifier (CNS opcional).
 5. **Fase 5** (~4 dias): Treatment Plan Templates como combos comerciais + fluxo de venda + auto-criação de Medication Requests para doses futuras.
 6. **Fase 6** (~3 dias): Report "Retornos Pendentes" + dashboard.
-7. **Fase 7 (NOVA)** (~1 dia): **Adequação schema + helpers WhatsApp**. Valida que todos os campos requeridos pelos 5 templates HSM aprovados estão acessíveis. Implementa helpers `format_vaccine_list`, `format_appointment_for_whatsapp`, `format_dose_reminder_for_whatsapp`. Configura `imunocare_clinic_address_short` em site_config. Smoke tests manuais de extração de variáveis.
+7. **Fase 7 (NOVA)** (~1 dia): **Adequação schema + helpers WhatsApp**. **Concluída** (templates 2-4). Child table `Imunocare Appointment Vaccine` + custom field `imun_vaccines` em Patient Appointment (fonte da variável de vacinas). Helpers em `whatsapp_helpers.py`: `format_vaccine_list`, `modalidade_label`, `payment_status_label`, `get_appointment_whatsapp_params`. Config `imunocare_clinic_address_short`. Template 5 (lembrete_reforco_dose) fica pendente da Fase 5 (Medication Request).
 8. **Fase 8** (~2 dias, era Fase 7): Hooks `Patient Appointment.after_insert/on_update` + schedulers daily/weekly disparando templates HSM aprovados.
 9. **Fase 9** (contínuo, era Fase 8): UX polish.
 
