@@ -94,18 +94,18 @@ _PATIENT_CNS_SCRIPT_NAME = "Imunocare - Patient Buscar CNS RNDS"
 _PATIENT_CNS_SCRIPT = """
 frappe.ui.form.on('Patient', {
 	refresh(frm) {
-		// CNS sempre visível e não-editável. NÃO usar set_df_property('read_only')
-		// porque o Frappe OCULTA campos read-only vazios. Bloqueia o input via
-		// DOM, sem alterar df.read_only (que dispara o ocultamento).
+		// CNS editável quando VAZIO (entrada manual de fallback) e read-only
+		// quando preenchido (protege o valor resolvido/digitado). NÃO usar
+		// set_df_property('read_only') — o Frappe oculta read-only vazio.
 		const f = frm.get_field('cns');
 		if (f && f.$input) {
-			f.$input.attr('readonly', true).css('background-color', 'var(--disabled-control-bg)');
+			const locked = !!frm.doc.cns;
+			f.$input.attr('readonly', locked);
+			f.$input.css('background-color', locked ? 'var(--disabled-control-bg)' : '');
 		}
 	},
 	before_save(frm) {
-		// A resolução do CNS no RNDS acontece no validate server-side durante
-		// o save. Avisa o usuário que a consulta está em andamento antes da
-		// confirmação final de que o paciente foi salvo.
+		// Resolução do CNS no RNDS roda no validate server-side só quando vazio.
 		if (frm.doc.cpf && !frm.doc.cns) {
 			frappe.show_alert(
 				{ message: __('Consultando CNS no RNDS antes de salvar...'), indicator: 'blue' },
@@ -121,10 +121,12 @@ _PRACTITIONER_CNS_SCRIPT_NAME = "Imunocare - Practitioner CNS RNDS"
 _PRACTITIONER_CNS_SCRIPT = """
 frappe.ui.form.on('Healthcare Practitioner', {
 	refresh(frm) {
-		// CNS read-only na UI sem ocultar (Frappe esconde read-only vazio).
+		// CNS editável quando vazio (fallback manual), read-only quando preenchido.
 		const f = frm.get_field('cns');
 		if (f && f.$input) {
-			f.$input.attr('readonly', true).css('background-color', 'var(--disabled-control-bg)');
+			const locked = !!frm.doc.cns;
+			f.$input.attr('readonly', locked);
+			f.$input.css('background-color', locked ? 'var(--disabled-control-bg)' : '');
 		}
 	},
 	before_save(frm) {

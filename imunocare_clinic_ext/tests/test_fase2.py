@@ -93,13 +93,14 @@ class TestCpfValidation(FrappeTestCase):
 		ro = frappe.db.get_value("Custom Field", {"dt": "Patient", "fieldname": "cns"}, "read_only")
 		self.assertEqual(ro, 0)
 
-	def test_cns_client_script_makes_it_readonly(self):
-		# Bloqueia o input via DOM (attr readonly), sem set_df_property('read_only')
-		# que ocultaria o campo vazio.
+	def test_cns_client_script_readonly_when_filled(self):
+		# CNS editável quando vazio (fallback manual), read-only quando preenchido.
+		# Bloqueia via DOM (attr readonly condicional), sem set_df_property.
 		script = frappe.db.get_value(
 			"Client Script", "Imunocare - Patient Buscar CNS RNDS", "script"
 		)
-		self.assertIn("attr('readonly', true)", script)
+		self.assertIn("attr('readonly', locked)", script)
+		self.assertIn("!!frm.doc.cns", script)
 		self.assertNotIn("set_df_property('cns', 'read_only'", script)
 
 	def test_cns_description(self):
