@@ -171,6 +171,47 @@ def enviar_imunizacao(encounter: str, dp_name: str) -> str:
 		return _set("Erro", payload=str(e)[:2000])
 
 
+@frappe.whitelist()
+def testar_envio_ria(
+	cns_paciente: str,
+	codigo_imunobiologico: str,
+	lote: str = "LOTE-TESTE-001",
+	fabricante: str = "Fabricante Teste",
+	dose_numero: str = "1",
+	cns_profissional: str | None = None,
+	estrategia: str = DEFAULT_ESTRATEGIA,
+	grupo_atendimento: str | None = None,
+) -> dict:
+	"""Monta e envia um Bundle RIA de TESTE ao RNDS, retornando a resposta crua.
+
+	Ferramenta de validação (homologação): permite iterar nos ValueSets do SIPNI
+	vendo exatamente o que o RNDS aceita/rejeita (OperationOutcome). Não persiste
+	nada — usa os dados informados diretamente.
+	"""
+	from imunocare_clinic_ext.rnds_client import ehr_post
+
+	settings = frappe.get_single("RNDS Settings")
+	data = {
+		"patient_id_system": SYS_CNS, "patient_id_value": cns_paciente,
+		"cnes": settings.cnes, "imunobiologico": codigo_imunobiologico,
+		"occurrence": now_datetime().isoformat(),
+		"lote": lote, "fabricante": fabricante, "dose_numero": dose_numero,
+		"profissional_cns": cns_profissional, "estrategia": estrategia,
+		"grupo_atendimento": grupo_atendimento,
+	}
+	bundle = build_immunization_bundle(data)
+	try:
+		resp = ehr_post("Bundle", bundle)
+		body = resp.text
+		try:
+			body = resp.json()
+		except Exception:
+			pass
+		return {"status_code": resp.status_code, "response": body, "bundle_enviado": bundle}
+	except Exception as e:
+		return {"status_code": None, "error": str(e), "bundle_enviado": bundle}
+
+
 def _via_code(via_label: str | None) -> str | None:
 	"""Placeholder de mapeamento via de administração → código BRViaAdministracao.
 
