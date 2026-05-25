@@ -10,7 +10,7 @@ requests-pkcs12 — nunca é escrito em disco.
 from __future__ import annotations
 
 import requests
-from requests_pkcs12 import post as pkcs12_post
+from requests_pkcs12 import get as pkcs12_get
 
 import frappe
 from frappe import _
@@ -44,7 +44,8 @@ def get_access_token(force_refresh: bool = False) -> str:
 	senha = settings.get_password("senha_certificado")
 
 	try:
-		resp = pkcs12_post(
+		# RNDS EHR Auth: o token é obtido via GET (mTLS), não POST.
+		resp = pkcs12_get(
 			settings.url_token,
 			pkcs12_data=pfx_bytes,
 			pkcs12_password=senha,

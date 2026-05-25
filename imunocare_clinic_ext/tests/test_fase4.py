@@ -145,16 +145,16 @@ class TestRNDSClientToken(FrappeTestCase):
 			def raise_for_status(self):
 				pass
 
-		with patch.object(rnds_client, "pkcs12_post", return_value=FakeResp()) as mock_post:
+		with patch.object(rnds_client, "pkcs12_get", return_value=FakeResp()) as mock_get:
 			token = rnds_client.get_access_token(force_refresh=True)
 			self.assertEqual(token, "TESTE-TOKEN-123")
 			# .pfx passado como bytes em memória (nunca arquivo)
-			_, kwargs = mock_post.call_args
+			_, kwargs = mock_get.call_args
 			self.assertIsInstance(kwargs["pkcs12_data"], bytes)
 			self.assertEqual(kwargs["pkcs12_password"], "tok123")
 
 		# Segunda chamada vem do cache (sem nova requisição).
-		with patch.object(rnds_client, "pkcs12_post") as mock_post2:
+		with patch.object(rnds_client, "pkcs12_get") as mock_get2:
 			token2 = rnds_client.get_access_token()
 			self.assertEqual(token2, "TESTE-TOKEN-123")
-			mock_post2.assert_not_called()
+			mock_get2.assert_not_called()
