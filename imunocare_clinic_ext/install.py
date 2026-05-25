@@ -104,8 +104,9 @@ frappe.ui.form.on('Patient', {
 			f.$input.css('background-color', locked ? 'var(--disabled-control-bg)' : '');
 		}
 
+		// Carteira de Vacinação: renderizada na aba (campo HTML imun_carteira_html).
 		if (!frm.is_new()) {
-			frm.add_custom_button(__('Carteira de Vacinação'), () => imunocare_carteira(frm));
+			imunocare_render_carteira(frm);
 		}
 	},
 	before_save(frm) {
@@ -119,12 +120,12 @@ frappe.ui.form.on('Patient', {
 	},
 });
 
-function imunocare_carteira(frm) {
+function imunocare_render_carteira(frm) {
+	const field = frm.get_field('imun_carteira_html');
+	if (!field) return;
 	frappe.call({
 		method: 'imunocare_clinic_ext.api.vaccine_card.get_vaccine_card',
 		args: { patient: frm.doc.name },
-		freeze: true,
-		freeze_message: __('Montando carteira de vacinação...'),
 		callback: (r) => {
 			const card = r.message || {};
 			const cores = { 'Aplicada': 'green', 'Pendente': 'orange', 'Atrasada': 'red', 'Futura': 'gray' };
@@ -161,10 +162,7 @@ function imunocare_carteira(frm) {
 					</tr></thead>
 					<tbody>${linhas || '<tr><td colspan="6">Nenhuma dose no calendário PNI.</td></tr>'}</tbody>
 				</table>`;
-
-			const d = new frappe.ui.Dialog({ title: __('Carteira de Vacinação'), size: 'extra-large' });
-			d.$body.html(html);
-			d.show();
+			field.$wrapper.html(html);
 		},
 	});
 }

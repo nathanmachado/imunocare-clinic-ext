@@ -220,6 +220,20 @@ CUSTOM_FIELDS = {
 			"insert_after": "nome_responsavel",
 			"description": "Obrigatório para pacientes menores de 18 anos.",
 		},
+		# Aba "Carteira de Vacinação", logo após "Detalhes" (insert_after o último
+		# campo da 1ª aba: patient_details). Conteúdo renderizado por Client Script.
+		{
+			"fieldname": "imun_carteira_tab",
+			"label": "Carteira de Vacinação",
+			"fieldtype": "Tab Break",
+			"insert_after": "patient_details",
+		},
+		{
+			"fieldname": "imun_carteira_html",
+			"label": "Carteira",
+			"fieldtype": "HTML",
+			"insert_after": "imun_carteira_tab",
+		},
 	],
 	"Drug Prescription": [
 		{

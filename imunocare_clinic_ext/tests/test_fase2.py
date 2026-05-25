@@ -103,11 +103,21 @@ class TestCpfValidation(FrappeTestCase):
 		self.assertIn("!!frm.doc.cns", script)
 		self.assertNotIn("set_df_property('cns', 'read_only'", script)
 
-	def test_carteira_button_in_client_script(self):
+	def test_carteira_tab_and_html_fields(self):
+		# Carteira é uma aba (Tab Break) após "Detalhes", com campo HTML.
+		tab = frappe.db.get_value(
+			"Custom Field", {"dt": "Patient", "fieldname": "imun_carteira_tab"},
+			["fieldtype", "insert_after"], as_dict=True,
+		)
+		self.assertEqual(tab.fieldtype, "Tab Break")
+		self.assertEqual(tab.insert_after, "patient_details")
+		self.assertTrue(frappe.db.exists("Custom Field", {"dt": "Patient", "fieldname": "imun_carteira_html"}))
+
+	def test_carteira_rendered_in_client_script(self):
 		script = frappe.db.get_value(
 			"Client Script", "Imunocare - Patient Buscar CNS RNDS", "script"
 		)
-		self.assertIn("Carteira de Vacinação", script)
+		self.assertIn("imun_carteira_html", script)
 		self.assertIn("get_vaccine_card", script)
 
 	def test_cns_description(self):

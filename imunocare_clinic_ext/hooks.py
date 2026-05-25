@@ -108,6 +108,7 @@ fixtures = [
 				"cpf", "cns",
 				"imun_naturalidade_section", "pais_nascimento", "cidade_nascimento",
 				"imun_responsavel_section", "nome_responsavel", "cpf_responsavel",
+				"imun_carteira_tab", "imun_carteira_html",
 				# Drug Prescription (Fase 2)
 				"lote", "fabricante", "validade_lote",
 				"local_anatomico_aplicado", "via_administracao_aplicada",
