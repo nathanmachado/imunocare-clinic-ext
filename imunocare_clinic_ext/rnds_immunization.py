@@ -147,7 +147,12 @@ def enviar_imunizacao(encounter: str, dp_name: str) -> str:
 		return _set("Erro", payload=f"Medication {dp.medication} sem codigo_rnds (BRImunobiologico).")
 
 	settings = frappe.get_single("RNDS Settings")
+	# O registro sai com o CNS do profissional que APLICOU (practitioner do
+	# encounter) — não de um profissional fixo. É exigência de conformidade:
+	# cada aplicação é atribuída a quem a executou.
 	prof_cns = frappe.db.get_value("Healthcare Practitioner", enc.practitioner, "cns") if enc.get("practitioner") else None
+	if not prof_cns:
+		return _set("Erro", payload="Profissional da aplicação sem CNS — obrigatório para o registro no RNDS.")
 
 	data = {
 		"patient_id_system": pid[0], "patient_id_value": pid[1],
@@ -161,7 +166,8 @@ def enviar_imunizacao(encounter: str, dp_name: str) -> str:
 
 	try:
 		bundle = build_immunization_bundle(data)
-		resp = ehr_post("Bundle", bundle)
+		# header Authorization = CNS do profissional que aplicou (não o do Settings)
+		resp = ehr_post("Bundle", bundle, cns_solicitante=prof_cns)
 		if resp.status_code in (200, 201):
 			rnds_id = (resp.json() or {}).get("id") if _is_json(resp) else None
 			return _set("Enviado", rnds_id=rnds_id or "", payload=resp.text[:2000])

@@ -83,15 +83,19 @@ def _extract_token(resp) -> str:
 		return resp.text.strip()
 
 
-def _ehr_auth_headers(settings, extra: dict | None = None) -> dict:
+def _ehr_auth_headers(settings, extra: dict | None = None, cns_solicitante: str | None = None) -> dict:
 	"""Headers de autenticação do EHR Services.
 
 	O RNDS exige DOIS headers nas chamadas FHIR:
 	- ``X-Authorization-Server``: Bearer com o access_token (do certificado).
-	- ``Authorization``: CNS do profissional solicitante (vinculado ao CNES).
+	- ``Authorization``: CNS do profissional em nome de quem a requisição é feita.
+
+	``cns_solicitante`` permite identificar o profissional ESPECÍFICO da operação
+	(ex.: quem aplicou a vacina, no envio do RIA). Quando omitido, usa o
+	"profissional responsável" do RNDS Settings (consultas administrativas).
 	"""
 	headers = {"X-Authorization-Server": f"Bearer {get_access_token()}"}
-	cns = settings.get("cns_solicitante")
+	cns = cns_solicitante or settings.get("cns_solicitante")
 	if not cns and settings.get("profissional_responsavel"):
 		cns = frappe.db.get_value("Healthcare Practitioner", settings.profissional_responsavel, "cns")
 	if cns:
@@ -101,25 +105,28 @@ def _ehr_auth_headers(settings, extra: dict | None = None) -> dict:
 	return headers
 
 
-def ehr_get(path: str, params: dict | None = None) -> requests.Response:
+def ehr_get(path: str, params: dict | None = None, cns_solicitante: str | None = None) -> requests.Response:
 	"""GET autenticado no EHR Services (FHIR). ``path`` relativo a url_ehr."""
 	settings = _settings()
 	url = f"{settings.url_ehr.rstrip('/')}/{path.lstrip('/')}"
 	return requests.get(
 		url,
-		headers=_ehr_auth_headers(settings, {"Accept": "application/fhir+json"}),
+		headers=_ehr_auth_headers(settings, {"Accept": "application/fhir+json"}, cns_solicitante),
 		params=params or {},
 		timeout=30,
 	)
 
 
-def ehr_post(path: str, payload: dict) -> requests.Response:
-	"""POST autenticado no EHR Services (FHIR). ``path`` relativo a url_ehr."""
+def ehr_post(path: str, payload: dict, cns_solicitante: str | None = None) -> requests.Response:
+	"""POST autenticado no EHR Services (FHIR). ``path`` relativo a url_ehr.
+
+	``cns_solicitante``: CNS do profissional da operação (ex.: aplicador da vacina).
+	"""
 	settings = _settings()
 	url = f"{settings.url_ehr.rstrip('/')}/{path.lstrip('/')}"
 	return requests.post(
 		url,
-		headers=_ehr_auth_headers(settings, {"Content-Type": "application/fhir+json"}),
+		headers=_ehr_auth_headers(settings, {"Content-Type": "application/fhir+json"}, cns_solicitante),
 		json=payload,
 		timeout=30,
 	)

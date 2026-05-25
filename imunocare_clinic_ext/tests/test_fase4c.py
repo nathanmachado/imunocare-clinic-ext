@@ -79,6 +79,46 @@ class TestImmunizationBundle(FrappeTestCase):
 		self.assertEqual(imm["patient"]["identifier"]["system"], SYS_CPF)
 
 
+class TestEnvioUsaProfissionalDaAplicacao(FrappeTestCase):
+	"""O envio do RIA usa o CNS do profissional que aplicou (não um fixo)."""
+
+	def test_ehr_post_passa_cns_do_aplicador(self):
+		from unittest.mock import patch
+
+		from imunocare_clinic_ext import rnds_client
+
+		captured = {}
+
+		def fake_headers(settings, extra=None, cns_solicitante=None):
+			captured["cns"] = cns_solicitante
+			return {"X-Authorization-Server": "Bearer T", **(extra or {})}
+
+		class FakeSettings(dict):
+			url_ehr = "https://x/api/fhir/r4"
+			def get(self, k, d=None):
+				return d
+
+		with patch.object(rnds_client, "_settings", return_value=FakeSettings()), patch.object(
+			rnds_client, "_ehr_auth_headers", side_effect=fake_headers
+		), patch.object(rnds_client.requests, "post", return_value=object()):
+			rnds_client.ehr_post("Bundle", {"x": 1}, cns_solicitante="700905964221498")
+
+		# o CNS do aplicador chega ao montador de headers
+		self.assertEqual(captured["cns"], "700905964221498")
+
+	def test_auth_header_prioriza_cns_da_operacao(self):
+		from unittest.mock import patch
+
+		from imunocare_clinic_ext import rnds_client
+
+		# Settings tem um profissional responsável (Larissa), mas a operação
+		# informa o CNS de quem aplicou (Maria) — deve prevalecer o da operação.
+		s = frappe._dict(cns_solicitante="111LARISSA", profissional_responsavel=None)
+		with patch.object(rnds_client, "get_access_token", return_value="T"):
+			headers = rnds_client._ehr_auth_headers(s, cns_solicitante="700905964221498")
+		self.assertEqual(headers["Authorization"], "700905964221498")
+
+
 class TestRndsImmunizationFields(FrappeTestCase):
 	@classmethod
 	def setUpClass(cls):
