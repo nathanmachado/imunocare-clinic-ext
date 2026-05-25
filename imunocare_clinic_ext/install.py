@@ -103,6 +103,10 @@ frappe.ui.form.on('Patient', {
 			f.$input.attr('readonly', locked);
 			f.$input.css('background-color', locked ? 'var(--disabled-control-bg)' : '');
 		}
+
+		if (!frm.is_new()) {
+			frm.add_custom_button(__('Carteira de Vacinação'), () => imunocare_carteira(frm));
+		}
 	},
 	before_save(frm) {
 		// Resolução do CNS no RNDS roda no validate server-side só quando vazio.
@@ -114,6 +118,56 @@ frappe.ui.form.on('Patient', {
 		}
 	},
 });
+
+function imunocare_carteira(frm) {
+	frappe.call({
+		method: 'imunocare_clinic_ext.api.vaccine_card.get_vaccine_card',
+		args: { patient: frm.doc.name },
+		freeze: true,
+		freeze_message: __('Montando carteira de vacinação...'),
+		callback: (r) => {
+			const card = r.message || {};
+			const cores = { 'Aplicada': 'green', 'Pendente': 'orange', 'Atrasada': 'red', 'Futura': 'gray' };
+			const resumo = card.resumo || {};
+			const idade = card.idade_meses != null
+				? Math.floor(card.idade_meses / 12) + 'a ' + (card.idade_meses % 12) + 'm' : '—';
+
+			let chips = '';
+			['Aplicada', 'Pendente', 'Atrasada', 'Futura'].forEach((s) => {
+				chips += `<span class="indicator-pill ${cores[s]}" style="margin-right:8px">${s}: ${resumo[s] || 0}</span>`;
+			});
+
+			let linhas = '';
+			(card.doses || []).forEach((d) => {
+				const dt = d.data_aplicacao ? frappe.datetime.str_to_user(d.data_aplicacao) : '';
+				linhas += `<tr>
+					<td>${frappe.utils.escape_html(d.calendario || '')}</td>
+					<td>${frappe.utils.escape_html(d.vacina || '')}</td>
+					<td style="text-align:center">${d.dose_numero || ''}</td>
+					<td><span class="indicator-pill ${cores[d.status] || 'gray'}">${d.status}</span></td>
+					<td>${dt}</td>
+					<td>${frappe.utils.escape_html(d.lote || '')}</td>
+				</tr>`;
+			});
+
+			const html = `
+				<div style="margin-bottom:12px">
+					<b>${frappe.utils.escape_html(card.patient_name || '')}</b> &middot; ${idade}
+				</div>
+				<div style="margin-bottom:16px">${chips}</div>
+				<table class="table table-bordered" style="font-size:13px">
+					<thead><tr>
+						<th>Calendário</th><th>Vacina</th><th>Dose</th><th>Situação</th><th>Aplicada em</th><th>Lote</th>
+					</tr></thead>
+					<tbody>${linhas || '<tr><td colspan="6">Nenhuma dose no calendário PNI.</td></tr>'}</tbody>
+				</table>`;
+
+			const d = new frappe.ui.Dialog({ title: __('Carteira de Vacinação'), size: 'extra-large' });
+			d.$body.html(html);
+			d.show();
+		},
+	});
+}
 """.strip()
 
 

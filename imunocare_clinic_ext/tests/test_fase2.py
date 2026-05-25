@@ -103,6 +103,13 @@ class TestCpfValidation(FrappeTestCase):
 		self.assertIn("!!frm.doc.cns", script)
 		self.assertNotIn("set_df_property('cns', 'read_only'", script)
 
+	def test_carteira_button_in_client_script(self):
+		script = frappe.db.get_value(
+			"Client Script", "Imunocare - Patient Buscar CNS RNDS", "script"
+		)
+		self.assertIn("Carteira de Vacinação", script)
+		self.assertIn("get_vaccine_card", script)
+
 	def test_cns_description(self):
 		desc = frappe.db.get_value("Custom Field", {"dt": "Patient", "fieldname": "cns"}, "description")
 		self.assertEqual(desc, "Atualizado automaticamente")
