@@ -59,13 +59,38 @@ class TestRNDSSettings(FrappeTestCase):
 	def test_doctype_is_single(self):
 		self.assertTrue(frappe.get_meta("RNDS Settings").issingle)
 
-	def test_default_endpoints_homologacao(self):
+	def test_homologacao_endpoints_composed(self):
 		self.settings.ambiente = "Homologação"
-		self.settings.url_token = ""
-		self.settings.url_ehr = ""
 		self.settings.save(ignore_permissions=True)
-		self.assertIn("hmg", self.settings.url_token)
-		self.assertIn("ehr-auth", self.settings.url_token)
+		self.assertEqual(self.settings.url_token, "https://ehr-auth-hmg.saude.gov.br/api/token")
+		self.assertEqual(self.settings.url_ehr, "https://ehr-services.hmg.saude.gov.br/api/fhir/r4")
+
+	def test_normalize_uf(self):
+		from imunocare_clinic_ext.imunocare_clinic_ext.doctype.rnds_settings.rnds_settings import (
+			_normalize_uf,
+		)
+
+		self.assertEqual(_normalize_uf("Minas Gerais"), "MG")
+		self.assertEqual(_normalize_uf("MG"), "MG")
+		self.assertEqual(_normalize_uf("são paulo"), "SP")
+		self.assertEqual(_normalize_uf("sp"), "SP")
+		self.assertEqual(_normalize_uf("Distrito Federal"), "DF")
+		self.assertIsNone(_normalize_uf(None))
+		self.assertIsNone(_normalize_uf("Xanadu"))
+
+	def test_producao_ehr_por_uf(self):
+		from unittest.mock import patch
+
+		with patch.object(type(self.settings), "_detect_uf", return_value="MG"):
+			self.settings.ambiente = "Produção"
+			self.settings.save(ignore_permissions=True)
+		self.assertEqual(self.settings.uf, "MG")
+		self.assertEqual(self.settings.url_token, "https://ehr-auth.saude.gov.br/api/token")
+		self.assertEqual(self.settings.url_ehr, "https://mg-ehr-services.saude.gov.br/api/fhir/r4")
+		# volta para homologação para não afetar outros testes
+		with patch.object(type(self.settings), "_detect_uf", return_value="MG"):
+			self.settings.ambiente = "Homologação"
+			self.settings.save(ignore_permissions=True)
 
 	def test_certificate_encrypted_and_file_removed(self):
 		senha = "minhasenha123"

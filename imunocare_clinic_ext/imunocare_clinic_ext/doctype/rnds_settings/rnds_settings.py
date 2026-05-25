@@ -13,40 +13,82 @@ Segurança do certificado A1 (decisão 2026-05-24):
 from __future__ import annotations
 
 import base64
+import unicodedata
 
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils.password import decrypt, encrypt
 
-# Endpoints oficiais por ambiente (editáveis no DocType; defaults sugeridos).
-# Homologação é nacional. Em produção o token é nacional, mas o EHR Services é
-# por UF — o default abaixo é o de Minas Gerais (mg-), onde a clínica opera;
-# ajustar o prefixo da UF se mudar de estado.
-DEFAULT_ENDPOINTS = {
-	"Homologação": {
-		"token": "https://ehr-auth-hmg.saude.gov.br/api/token",
-		"ehr": "https://ehr-services.hmg.saude.gov.br/api/fhir/r4",
-	},
-	"Produção": {
-		"token": "https://ehr-auth.saude.gov.br/api/token",
-		"ehr": "https://mg-ehr-services.saude.gov.br/api/fhir/r4",
-	},
+# Endpoints nacionais (token em ambos os ambientes; EHR só em homologação).
+_AUTH = {
+	"Homologação": "https://ehr-auth-hmg.saude.gov.br/api/token",
+	"Produção": "https://ehr-auth.saude.gov.br/api/token",
 }
+_EHR_HMG = "https://ehr-services.hmg.saude.gov.br/api/fhir/r4"
+# Produção: EHR Services é por UF → https://{uf}-ehr-services.saude.gov.br/...
+_EHR_PROD_TMPL = "https://{uf}-ehr-services.saude.gov.br/api/fhir/r4"
+
+# Nome do estado (pt-BR, sem acento, minúsculo) → sigla UF.
+_UF_POR_NOME = {
+	"acre": "AC", "alagoas": "AL", "amapa": "AP", "amazonas": "AM", "bahia": "BA",
+	"ceara": "CE", "distrito federal": "DF", "espirito santo": "ES", "goias": "GO",
+	"maranhao": "MA", "mato grosso": "MT", "mato grosso do sul": "MS",
+	"minas gerais": "MG", "para": "PA", "paraiba": "PB", "parana": "PR",
+	"pernambuco": "PE", "piaui": "PI", "rio de janeiro": "RJ",
+	"rio grande do norte": "RN", "rio grande do sul": "RS", "rondonia": "RO",
+	"roraima": "RR", "santa catarina": "SC", "sao paulo": "SP", "sergipe": "SE",
+	"tocantins": "TO",
+}
+_SIGLAS = set(_UF_POR_NOME.values())
 
 
 class RNDSSettings(Document):
 	def validate(self):
-		self._apply_default_endpoints()
+		self._compose_endpoints()
 		if self.certificado_upload:
 			self._process_certificate()
 
-	def _apply_default_endpoints(self):
-		defaults = DEFAULT_ENDPOINTS.get(self.ambiente, {})
-		if not self.url_token:
-			self.url_token = defaults.get("token")
-		if not self.url_ehr:
-			self.url_ehr = defaults.get("ehr")
+	def _compose_endpoints(self):
+		"""Detecta a UF do endereço da empresa e compõe os endpoints RNDS."""
+		self.uf = self._detect_uf() or ""
+		self.url_token = _AUTH.get(self.ambiente, "")
+		if self.ambiente == "Homologação":
+			self.url_ehr = _EHR_HMG
+		elif self.uf:
+			self.url_ehr = _EHR_PROD_TMPL.format(uf=self.uf.lower())
+		else:
+			self.url_ehr = ""
+			frappe.msgprint(
+				_("Não foi possível detectar a UF do endereço da empresa. "
+				  "Cadastre o estado no endereço da Company para compor o endpoint de produção."),
+				indicator="orange",
+				alert=True,
+			)
+
+	def _detect_uf(self) -> str | None:
+		"""UF (sigla) a partir do endereço primário da Company."""
+		company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+		if not company:
+			return None
+		address_names = frappe.get_all(
+			"Dynamic Link",
+			filters={"link_doctype": "Company", "link_name": company, "parenttype": "Address"},
+			pluck="parent",
+		)
+		if not address_names:
+			return None
+		addresses = frappe.get_all(
+			"Address",
+			filters={"name": ("in", address_names)},
+			fields=["state", "is_primary_address"],
+			order_by="is_primary_address desc",
+		)
+		for addr in addresses:
+			uf = _normalize_uf(addr.get("state"))
+			if uf:
+				return uf
+		return None
 
 	def _process_certificate(self):
 		"""Lê, valida e criptografa o .pfx; remove o arquivo enviado."""
@@ -102,3 +144,16 @@ def _subject_cn(cert) -> str:
 		return cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
 	except Exception:
 		return ""
+
+
+def _normalize_uf(state: str | None) -> str | None:
+	"""Converte o estado do Address (sigla ou nome, com/sem acento) na sigla UF."""
+	if not state:
+		return None
+	raw = state.strip()
+	if len(raw) == 2 and raw.upper() in _SIGLAS:
+		return raw.upper()
+	sem_acento = "".join(
+		c for c in unicodedata.normalize("NFKD", raw.lower()) if not unicodedata.combining(c)
+	)
+	return _UF_POR_NOME.get(sem_acento)
