@@ -386,6 +386,7 @@ CUSTOM_FIELDS = {
 			"label": "CPF",
 			"fieldtype": "Data",
 			"insert_after": "date_of_birth",
+			"reqd": 1,
 			"description": "",
 		},
 	],

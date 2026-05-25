@@ -91,6 +91,10 @@ class TestRndsImmunizationFields(FrappeTestCase):
 		self.assertTrue(frappe.db.exists("Custom Field", {"dt": "Healthcare Practitioner", "fieldname": "cns"}))
 		self.assertFalse(frappe.db.exists("Custom Field", {"dt": "Healthcare Practitioner", "fieldname": "cpf"}))
 
+	def test_employee_cpf_obrigatorio(self):
+		reqd = frappe.db.get_value("Custom Field", {"dt": "Employee", "fieldname": "cpf"}, "reqd")
+		self.assertEqual(reqd, 1)
+
 	def test_employee_obrigatorio_no_practitioner(self):
 		reqd = frappe.db.get_value(
 			"Property Setter",
