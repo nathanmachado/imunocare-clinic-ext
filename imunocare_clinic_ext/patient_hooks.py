@@ -23,11 +23,40 @@ MAIORIDADE = 18
 
 
 def validate(doc, method=None) -> None:
-	"""Valida CPF, responsável (menores) e endereço vinculado."""
+	"""Valida CPF, responsável (menores), endereço e resolve o CNS no RNDS."""
 	_validate_and_normalize_cpf(doc, "cpf", _("CPF inválido: {0}"))
 	_validate_and_normalize_cpf(doc, "cpf_responsavel", _("CPF do responsável inválido: {0}"))
 	_validate_guardian(doc)
 	_validate_address(doc)
+	_resolve_cns(doc)
+
+
+def _resolve_cns(doc) -> None:
+	"""Resolve o CNS pelo CPF no RNDS durante o save (não-bloqueante).
+
+	A busca acontece no fluxo de salvar — não depende de ação manual, evitando
+	pacientes sem CNS e erros no registro RNDS. Só consulta quando há CPF e o
+	CNS ainda não foi preenchido (ou o CPF mudou). Falhas do RNDS (timeout,
+	indisponibilidade) NUNCA bloqueiam o cadastro: apenas logam.
+	"""
+	cpf = doc.get("cpf")
+	if not cpf:
+		return
+	cpf_mudou = True if doc.is_new() else doc.has_value_changed("cpf")
+	if doc.get("cns") and not cpf_mudou:
+		return
+
+	try:
+		from imunocare_clinic_ext.rnds_client import resolve_cns
+
+		cns = resolve_cns(cpf)
+		if cns:
+			doc.cns = cns
+	except Exception:
+		frappe.log_error(
+			frappe.get_traceback(),
+			"RNDS: falha ao resolver CNS no save do Patient (cadastro segue sem CNS)",
+		)
 
 
 def _validate_and_normalize_cpf(doc, fieldname: str, error_msg: str) -> None:

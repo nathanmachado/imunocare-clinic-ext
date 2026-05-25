@@ -76,21 +76,16 @@ def _apply_property_setters() -> None:
 _PATIENT_CNS_SCRIPT_NAME = "Imunocare - Patient Buscar CNS RNDS"
 _PATIENT_CNS_SCRIPT = """
 frappe.ui.form.on('Patient', {
-	refresh(frm) {
-		if (frm.is_new() || !frm.doc.cpf) return;
-		frm.add_custom_button(__('Buscar CNS no RNDS'), () => {
-			frappe.call({
-				method: 'imunocare_clinic_ext.rnds_client.buscar_cns_do_paciente',
-				args: { patient: frm.doc.name },
-				freeze: true,
-				freeze_message: __('Consultando o RNDS...'),
-				callback: (r) => {
-					const res = r.message || {};
-					frappe.show_alert({ message: res.message, indicator: res.found ? 'green' : 'orange' });
-					if (res.found) frm.reload_doc();
-				},
-			});
-		});
+	before_save(frm) {
+		// A resolução do CNS no RNDS acontece no validate server-side durante
+		// o save. Avisa o usuário que a consulta está em andamento antes da
+		// confirmação final de que o paciente foi salvo.
+		if (frm.doc.cpf && !frm.doc.cns) {
+			frappe.show_alert(
+				{ message: __('Consultando CNS no RNDS antes de salvar...'), indicator: 'blue' },
+				10
+			);
+		}
 	},
 });
 """.strip()

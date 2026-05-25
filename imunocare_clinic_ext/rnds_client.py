@@ -126,6 +126,10 @@ def resolve_cns(cpf: str) -> str | None:
 		return None
 
 	resp = ehr_get("Patient", params={"identifier": f"{CPF_SYSTEM}|{cpf}"})
+	# O RNDS retorna 404 quando o paciente não existe na base (CADSUS) — trata
+	# como "não encontrado", não como erro de integração.
+	if resp.status_code == 404:
+		return None
 	resp.raise_for_status()
 	bundle = resp.json()
 

@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import add_months, nowdate
 
 
 def _gerar_pfx(senha: str) -> bytes:
@@ -181,6 +182,7 @@ class TestResolveCns(FrappeTestCase):
 		from imunocare_clinic_ext import rnds_client
 
 		class FakeResp:
+			status_code = 200
 			def __init__(self, data):
 				self._data = data
 			def raise_for_status(self):
@@ -200,6 +202,7 @@ class TestResolveCns(FrappeTestCase):
 		from imunocare_clinic_ext import rnds_client
 
 		class FakeResp:
+			status_code = 200
 			def raise_for_status(self):
 				pass
 			def json(self):
@@ -208,9 +211,83 @@ class TestResolveCns(FrappeTestCase):
 		with patch.object(rnds_client, "ehr_get", return_value=FakeResp()):
 			self.assertIsNone(rnds_client.resolve_cns("52998224725"))
 
+	def test_resolve_cns_404_is_not_found(self):
+		from imunocare_clinic_ext import rnds_client
+
+		class FakeResp:
+			status_code = 404
+			def raise_for_status(self):
+				raise AssertionError("não deve levantar em 404")
+
+		with patch.object(rnds_client, "ehr_get", return_value=FakeResp()):
+			self.assertIsNone(rnds_client.resolve_cns("33282381824"))
+
 	def test_resolve_cns_invalid_cpf_no_call(self):
 		from imunocare_clinic_ext import rnds_client
 
 		with patch.object(rnds_client, "ehr_get") as mock:
 			self.assertIsNone(rnds_client.resolve_cns("123"))
 			mock.assert_not_called()
+
+
+class TestCnsOnSave(FrappeTestCase):
+	"""A resolução do CNS acontece no fluxo de salvar (não em botão)."""
+
+	_EMAIL = "cns.onsave@example.com"
+	_MOBILE = "+5511966667777"
+	_CPF = "26839145042"
+
+	def tearDown(self):
+		for pat in frappe.get_all("Patient", filters={"first_name": "CNS OnSave"}, pluck="name"):
+			try:
+				frappe.delete_doc("Patient", pat, force=True, ignore_permissions=True)
+			except Exception:
+				pass
+		for ct in frappe.get_all("Contact", filters={"email_id": self._EMAIL}, pluck="name"):
+			try:
+				frappe.delete_doc("Contact", ct, force=True, ignore_permissions=True)
+			except Exception:
+				pass
+		for cust in frappe.get_all("Customer", filters={"customer_name": ("like", "CNS OnSave%")}, pluck="name"):
+			try:
+				frappe.delete_doc("Customer", cust, force=True, ignore_permissions=True)
+			except Exception:
+				pass
+		if frappe.db.exists("User", self._EMAIL):
+			try:
+				frappe.delete_doc("User", self._EMAIL, force=True, ignore_permissions=True)
+			except Exception:
+				pass
+		frappe.db.commit()
+
+	def test_save_resolves_and_fills_cns(self):
+		from imunocare_clinic_ext import rnds_client
+
+		with patch.object(rnds_client, "resolve_cns", return_value="700508547440008"):
+			patient = frappe.get_doc(
+				{
+					"doctype": "Patient", "first_name": "CNS OnSave", "middle_name": "de",
+					"last_name": "Teste", "sex": "Male", "dob": add_months(nowdate(), -300),
+					"mobile": self._MOBILE, "email": self._EMAIL, "cpf": self._CPF,
+					"pais_nascimento": "Brazil", "cidade_nascimento": "Uberlândia",
+					"customer_group": "Pessoa Física",
+				}
+			).insert(ignore_permissions=True)
+		self.assertEqual(patient.cns, "700508547440008")
+
+	def test_save_does_not_block_on_rnds_failure(self):
+		from imunocare_clinic_ext import rnds_client
+
+		with patch.object(rnds_client, "resolve_cns", side_effect=Exception("RNDS fora do ar")):
+			patient = frappe.get_doc(
+				{
+					"doctype": "Patient", "first_name": "CNS OnSave", "middle_name": "de",
+					"last_name": "Falha", "sex": "Male", "dob": add_months(nowdate(), -300),
+					"mobile": self._MOBILE, "email": self._EMAIL, "cpf": self._CPF,
+					"pais_nascimento": "Brazil", "cidade_nascimento": "Uberlândia",
+					"customer_group": "Pessoa Física",
+				}
+			).insert(ignore_permissions=True)
+		# Cadastro salvo mesmo com RNDS indisponível; apenas sem CNS.
+		self.assertTrue(patient.name)
+		self.assertFalse(patient.cns)
