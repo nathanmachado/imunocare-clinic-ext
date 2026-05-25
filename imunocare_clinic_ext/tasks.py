@@ -58,3 +58,22 @@ def enfileirar_lembretes_reforco():
 
 	for patient, mrs in por_paciente.items():
 		enfileirar_reforco(patient, mrs)
+
+
+def retry_envios_rnds():
+	"""Reenfileira envios ao RNDS que falharam (rnds_status=Erro)."""
+	rows = frappe.db.sql(
+		"""
+		SELECT parent, name FROM `tabDrug Prescription`
+		WHERE rnds_status = 'Erro'
+		""",
+		as_dict=True,
+	)
+	for r in rows:
+		frappe.enqueue(
+			"imunocare_clinic_ext.rnds_immunization.enviar_imunizacao",
+			queue="long",
+			encounter=r["parent"],
+			dp_name=r["name"],
+		)
+

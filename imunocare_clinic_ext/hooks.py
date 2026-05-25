@@ -93,7 +93,7 @@ fixtures = [
 			["dt", "in", [
 				"Medication", "Therapy Plan Template", "Therapy Plan Template Detail",
 				"Patient", "Drug Prescription", "Patient Appointment",
-				"Treatment Plan Template", "Medication Request",
+				"Treatment Plan Template", "Medication Request", "Healthcare Practitioner",
 			]],
 			["fieldname", "in", [
 				# Medication (Fase 1)
@@ -192,12 +192,18 @@ doc_events = {
 		"after_insert": "imunocare_clinic_ext.appointment_hooks.after_insert",
 		"on_update": "imunocare_clinic_ext.appointment_hooks.on_update",
 	},
+	"Patient Encounter": {
+		"on_update": "imunocare_clinic_ext.encounter_hooks.on_update",
+	},
 }
 
 scheduler_events = {
 	"daily": [
 		"imunocare_clinic_ext.tasks.enfileirar_lembretes_d1",
 		"imunocare_clinic_ext.tasks.enfileirar_lembretes_reforco",
+	],
+	"hourly": [
+		"imunocare_clinic_ext.tasks.retry_envios_rnds",
 	],
 }
 

@@ -368,4 +368,13 @@ CUSTOM_FIELDS = {
 			"insert_after": "dose_numero",
 		},
 	],
+	"Healthcare Practitioner": [
+		{
+			"fieldname": "cns",
+			"label": "CNS (Cartão Nacional de Saúde)",
+			"fieldtype": "Data",
+			"insert_after": "practitioner_name",
+			"description": "CNS do profissional, usado como performer no registro RNDS.",
+		},
+	],
 }
