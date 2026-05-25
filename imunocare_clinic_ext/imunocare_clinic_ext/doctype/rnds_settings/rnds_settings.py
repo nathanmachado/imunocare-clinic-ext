@@ -25,7 +25,9 @@ _AUTH = {
 	"Homologação": "https://ehr-auth-hmg.saude.gov.br/api/token",
 	"Produção": "https://ehr-auth.saude.gov.br/api/token",
 }
-_EHR_HMG = "https://ehr-services.hmg.saude.gov.br/api/fhir/r4"
+# Host com HÍFEN (ehr-services-hmg), consistente com ehr-auth-hmg. O host com
+# ponto (ehr-services.hmg) responde 404 genérico (catch-all) — não é o EHR real.
+_EHR_HMG = "https://ehr-services-hmg.saude.gov.br/api/fhir/r4"
 # Produção: EHR Services é por UF → https://{uf}-ehr-services.saude.gov.br/...
 _EHR_PROD_TMPL = "https://{uf}-ehr-services.saude.gov.br/api/fhir/r4"
 
