@@ -156,6 +156,28 @@ def resolve_cns(cpf: str) -> str | None:
 	return None
 
 
+def resolve_cns_profissional(cpf: str) -> str | None:
+	"""Resolve o CNS de um profissional pelo CPF, via GET /Practitioner (RNDS)."""
+	cpf = re.sub(r"\D", "", cpf or "")
+	if len(cpf) != 11:
+		return None
+
+	resp = ehr_get("Practitioner", params={"identifier": f"{CPF_SYSTEM}|{cpf}"})
+	if resp.status_code == 404:
+		return None
+	resp.raise_for_status()
+	bundle = resp.json()
+
+	for entry in bundle.get("entry", []):
+		resource = entry.get("resource", {})
+		if resource.get("resourceType") != "Practitioner":
+			continue
+		for ident in resource.get("identifier", []):
+			if ident.get("system") == CNS_SYSTEM and ident.get("value"):
+				return re.sub(r"\D", "", ident["value"])
+	return None
+
+
 @frappe.whitelist()
 def buscar_cns_do_paciente(patient: str) -> dict:
 	"""Resolve e salva o CNS de um Patient a partir do seu CPF (RNDS)."""

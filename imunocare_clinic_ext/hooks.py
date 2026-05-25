@@ -195,6 +195,9 @@ doc_events = {
 	"Patient Encounter": {
 		"on_update": "imunocare_clinic_ext.encounter_hooks.on_update",
 	},
+	"Healthcare Practitioner": {
+		"validate": "imunocare_clinic_ext.practitioner_hooks.validate",
+	},
 }
 
 scheduler_events = {

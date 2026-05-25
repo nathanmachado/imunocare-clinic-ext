@@ -241,6 +241,42 @@ class TestResolveCns(FrappeTestCase):
 			self.assertIsNone(rnds_client.resolve_cns("123"))
 			mock.assert_not_called()
 
+	def test_resolve_cns_profissional_found(self):
+		from imunocare_clinic_ext import rnds_client
+
+		class FakeResp:
+			status_code = 200
+			def raise_for_status(self):
+				pass
+			def json(self):
+				return {
+					"resourceType": "Bundle",
+					"entry": [{"resource": {
+						"resourceType": "Practitioner",
+						"identifier": [
+							{"system": "http://rnds.saude.gov.br/fhir/r4/NamingSystem/cpf", "value": "52998224725"},
+							{"system": "http://rnds.saude.gov.br/fhir/r4/NamingSystem/cns", "value": "980016287974410"},
+						],
+					}}],
+				}
+
+		with patch.object(rnds_client, "ehr_get", return_value=FakeResp()) as mock:
+			cns = rnds_client.resolve_cns_profissional("529.982.247-25")
+			self.assertEqual(cns, "980016287974410")
+			_, kwargs = mock.call_args
+			self.assertIn("NamingSystem/cpf", kwargs["params"]["identifier"])
+
+	def test_resolve_cns_profissional_404(self):
+		from imunocare_clinic_ext import rnds_client
+
+		class FakeResp:
+			status_code = 404
+			def raise_for_status(self):
+				raise AssertionError("não deve levantar em 404")
+
+		with patch.object(rnds_client, "ehr_get", return_value=FakeResp()):
+			self.assertIsNone(rnds_client.resolve_cns_profissional("52998224725"))
+
 
 class TestCnsOnSave(FrappeTestCase):
 	"""A resolução do CNS acontece no fluxo de salvar (não em botão)."""

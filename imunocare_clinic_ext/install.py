@@ -100,21 +100,47 @@ frappe.ui.form.on('Patient', {
 """.strip()
 
 
+_PRACTITIONER_CNS_SCRIPT_NAME = "Imunocare - Practitioner CNS RNDS"
+_PRACTITIONER_CNS_SCRIPT = """
+frappe.ui.form.on('Healthcare Practitioner', {
+	refresh(frm) {
+		// CNS read-only na UI sem ocultar (Frappe esconde read-only vazio).
+		const f = frm.get_field('cns');
+		if (f && f.$input) {
+			f.$input.attr('readonly', true).css('background-color', 'var(--disabled-control-bg)');
+		}
+	},
+	before_save(frm) {
+		if (frm.doc.cpf && !frm.doc.cns) {
+			frappe.show_alert(
+				{ message: __('Consultando CNS do profissional no RNDS antes de salvar...'), indicator: 'blue' },
+				10
+			);
+		}
+	},
+});
+""".strip()
+
+
 def _register_client_scripts() -> None:
 	"""Cria/atualiza Client Scripts (idempotente). Armazenados no DB — não
 	dependem de build de assets, ideal para deploy em produção Docker."""
 	if not frappe.db.exists("DocType", "Client Script"):
 		return
-	if frappe.db.exists("Client Script", _PATIENT_CNS_SCRIPT_NAME):
-		doc = frappe.get_doc("Client Script", _PATIENT_CNS_SCRIPT_NAME)
-	else:
-		doc = frappe.new_doc("Client Script")
-		doc.name = _PATIENT_CNS_SCRIPT_NAME
-	doc.dt = "Patient"
-	doc.view = "Form"
-	doc.enabled = 1
-	doc.script = _PATIENT_CNS_SCRIPT
-	doc.save(ignore_permissions=True)
+	for name, dt, script in (
+		(_PATIENT_CNS_SCRIPT_NAME, "Patient", _PATIENT_CNS_SCRIPT),
+		(_PRACTITIONER_CNS_SCRIPT_NAME, "Healthcare Practitioner", _PRACTITIONER_CNS_SCRIPT),
+	):
+		if frappe.db.exists("Client Script", name):
+			doc = frappe.get_doc("Client Script", name)
+		else:
+			doc = frappe.new_doc("Client Script")
+			doc.name = name
+		doc.dt = dt
+		doc.view = "Form"
+		doc.enabled = 1
+		doc.script = script
+		doc.save(ignore_permissions=True)
 
 
 def _register_patient_history_doctypes() -> None:

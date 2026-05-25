@@ -370,11 +370,21 @@ CUSTOM_FIELDS = {
 	],
 	"Healthcare Practitioner": [
 		{
+			"fieldname": "cpf",
+			"label": "CPF",
+			"fieldtype": "Data",
+			"insert_after": "practitioner_name",
+			"description": "CPF do profissional. Usado para resolver o CNS no RNDS ao salvar.",
+		},
+		{
 			"fieldname": "cns",
 			"label": "CNS (Cartão Nacional de Saúde)",
 			"fieldtype": "Data",
-			"insert_after": "practitioner_name",
-			"description": "CNS do profissional, usado como performer no registro RNDS.",
+			"insert_after": "cpf",
+			# read_only=0 no schema (Frappe oculta read-only vazio) + read-only na
+			# UI via Client Script. Preenchido automaticamente do RNDS no save.
+			"read_only": 0,
+			"description": "Atualizado automaticamente (consulta ao RNDS pelo CPF).",
 		},
 	],
 }
