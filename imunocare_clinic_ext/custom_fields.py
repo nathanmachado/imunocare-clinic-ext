@@ -385,8 +385,8 @@ CUSTOM_FIELDS = {
 			"fieldname": "cpf",
 			"label": "CPF",
 			"fieldtype": "Data",
-			"insert_after": "personal_email",
-			"description": "Documento do colaborador. É a chave para resolver o CNS no RNDS.",
+			"insert_after": "date_of_birth",
+			"description": "",
 		},
 	],
 }
