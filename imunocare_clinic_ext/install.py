@@ -77,9 +77,13 @@ _PATIENT_CNS_SCRIPT_NAME = "Imunocare - Patient Buscar CNS RNDS"
 _PATIENT_CNS_SCRIPT = """
 frappe.ui.form.on('Patient', {
 	refresh(frm) {
-		// CNS é read-only na UI (não editável manualmente), mas mantido
-		// editável no schema para que o Frappe não o oculte quando vazio.
-		frm.set_df_property('cns', 'read_only', 1);
+		// CNS sempre visível e não-editável. NÃO usar set_df_property('read_only')
+		// porque o Frappe OCULTA campos read-only vazios. Bloqueia o input via
+		// DOM, sem alterar df.read_only (que dispara o ocultamento).
+		const f = frm.get_field('cns');
+		if (f && f.$input) {
+			f.$input.attr('readonly', true).css('background-color', 'var(--disabled-control-bg)');
+		}
 	},
 	before_save(frm) {
 		// A resolução do CNS no RNDS acontece no validate server-side durante
