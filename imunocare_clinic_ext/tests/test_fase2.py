@@ -87,9 +87,17 @@ class TestCpfValidation(FrappeTestCase):
 	def test_cpf_field_installed(self):
 		self.assertTrue(frappe.db.exists("Custom Field", {"dt": "Patient", "fieldname": "cpf"}))
 
-	def test_cns_is_read_only(self):
+	def test_cns_not_schema_readonly_so_it_stays_visible(self):
+		# read_only=0 no schema (Frappe oculta read-only vazios); a UI o torna
+		# read-only via Client Script. Garante que o campo sempre aparece.
 		ro = frappe.db.get_value("Custom Field", {"dt": "Patient", "fieldname": "cns"}, "read_only")
-		self.assertEqual(ro, 1)
+		self.assertEqual(ro, 0)
+
+	def test_cns_client_script_makes_it_readonly(self):
+		script = frappe.db.get_value(
+			"Client Script", "Imunocare - Patient Buscar CNS RNDS", "script"
+		)
+		self.assertIn("set_df_property('cns', 'read_only', 1)", script)
 
 	def test_cns_description(self):
 		desc = frappe.db.get_value("Custom Field", {"dt": "Patient", "fieldname": "cns"}, "description")

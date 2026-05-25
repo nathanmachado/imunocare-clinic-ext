@@ -76,6 +76,11 @@ def _apply_property_setters() -> None:
 _PATIENT_CNS_SCRIPT_NAME = "Imunocare - Patient Buscar CNS RNDS"
 _PATIENT_CNS_SCRIPT = """
 frappe.ui.form.on('Patient', {
+	refresh(frm) {
+		// CNS é read-only na UI (não editável manualmente), mas mantido
+		// editável no schema para que o Frappe não o oculte quando vazio.
+		frm.set_df_property('cns', 'read_only', 1);
+	},
 	before_save(frm) {
 		// A resolução do CNS no RNDS acontece no validate server-side durante
 		// o save. Avisa o usuário que a consulta está em andamento antes da

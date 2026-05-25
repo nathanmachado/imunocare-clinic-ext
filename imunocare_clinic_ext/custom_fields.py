@@ -170,7 +170,10 @@ CUSTOM_FIELDS = {
 			"label": "CNS (Cartão Nacional de Saúde)",
 			"fieldtype": "Data",
 			"insert_after": "cpf",
-			"read_only": 1,
+			# read_only=0 no schema: o Frappe OCULTA campos read-only vazios no
+			# form. Mantemos editável no schema (sempre visível) e tornamos
+			# read-only na UI via Client Script (set_df_property no refresh).
+			"read_only": 0,
 			"description": "Atualizado automaticamente",
 		},
 		{
