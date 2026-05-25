@@ -148,6 +148,7 @@ function imunocare_render_carteira(frm) {
 					<td><span class="indicator-pill ${cores[d.status] || 'gray'}">${d.status}</span></td>
 					<td>${dt}</td>
 					<td>${frappe.utils.escape_html(d.lote || '')}</td>
+					<td>${frappe.utils.escape_html(d.responsavel || '')}</td>
 				</tr>`;
 			});
 
@@ -158,9 +159,9 @@ function imunocare_render_carteira(frm) {
 				<div style="margin-bottom:16px">${chips}</div>
 				<table class="table table-bordered" style="font-size:13px">
 					<thead><tr>
-						<th>Calendário</th><th>Vacina</th><th>Dose</th><th>Situação</th><th>Aplicada em</th><th>Lote</th>
+						<th>Calendário</th><th>Vacina</th><th>Dose</th><th>Situação</th><th>Aplicada em</th><th>Lote</th><th>Responsável</th>
 					</tr></thead>
-					<tbody>${linhas || '<tr><td colspan="6">Nenhuma dose no calendário PNI.</td></tr>'}</tbody>
+					<tbody>${linhas || '<tr><td colspan="7">Nenhuma dose no calendário PNI.</td></tr>'}</tbody>
 				</table>`;
 			field.$wrapper.html(html);
 		},

@@ -361,6 +361,9 @@ class TestVaccineCard(FrappeTestCase):
 		)
 		self.assertEqual(hep_b_d1["status"], STATUS_APLICADA)
 		self.assertEqual(hep_b_d1["lote"], "LOTE-TESTE-01")
+		# Responsável = profissional que aplicou (practitioner do encounter)
+		self.assertIn("responsavel", hep_b_d1)
+		self.assertTrue(hep_b_d1["responsavel"])
 
 	def test_future_dose_for_baby(self):
 		"""HPV (idade ideal 108 meses) deve ser Futura para bebê de 7 meses."""

@@ -73,6 +73,7 @@ def get_vaccine_card(patient: str) -> dict:
 				"status": status,
 				"data_aplicacao": aplicacao.get("encounter_date") if aplicacao else None,
 				"lote": aplicacao.get("lote") if aplicacao else None,
+				"responsavel": aplicacao.get("responsavel") if aplicacao else None,
 			}
 		)
 
@@ -129,7 +130,8 @@ def _aplicacoes_do_paciente(patient: str) -> dict[tuple, dict]:
 			dp.medication AS medication,
 			dp.dose_numero AS dose_numero,
 			dp.lote AS lote,
-			pe.encounter_date AS encounter_date
+			pe.encounter_date AS encounter_date,
+			pe.practitioner_name AS responsavel
 		FROM `tabDrug Prescription` dp
 		JOIN `tabPatient Encounter` pe ON dp.parent = pe.name
 		WHERE pe.patient = %(patient)s
