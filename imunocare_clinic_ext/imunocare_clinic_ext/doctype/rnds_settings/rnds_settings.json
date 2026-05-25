@@ -8,6 +8,7 @@
  "field_order": [
   "ambiente",
   "cnes",
+  "profissional_responsavel",
   "cns_solicitante",
   "uf",
   "endpoints_section",
@@ -27,7 +28,8 @@
  "fields": [
   {"fieldname": "ambiente", "fieldtype": "Select", "label": "Ambiente", "options": "Homologação\nProdução", "default": "Homologação", "reqd": 1, "in_list_view": 1},
   {"fieldname": "cnes", "fieldtype": "Data", "label": "CNES do estabelecimento", "reqd": 1},
-  {"fieldname": "cns_solicitante", "fieldtype": "Data", "label": "CNS do profissional responsável", "description": "CNS de um profissional vinculado ao CNES, em nome de quem as requisições ao RNDS são feitas (header Authorization)."},
+  {"fieldname": "profissional_responsavel", "fieldtype": "Link", "options": "Healthcare Practitioner", "label": "Profissional responsável", "description": "Profissional vinculado ao CNES em nome de quem as requisições ao RNDS são feitas. O CNS é buscado do cadastro dele."},
+  {"fieldname": "cns_solicitante", "fieldtype": "Data", "label": "CNS do profissional", "read_only": 1, "fetch_from": "profissional_responsavel.cns", "fetch_if_empty": 0, "description": "Preenchido automaticamente a partir do cadastro do profissional responsável."},
   {"fieldname": "uf", "fieldtype": "Data", "label": "UF (detectada do endereço da empresa)", "read_only": 1},
   {"fieldname": "endpoints_section", "fieldtype": "Section Break", "label": "Endpoints RNDS (preenchidos automaticamente)"},
   {"fieldname": "url_token", "fieldtype": "Data", "label": "URL de autenticação (EHR Auth /token)", "read_only": 1},

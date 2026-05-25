@@ -91,8 +91,11 @@ def _ehr_auth_headers(settings, extra: dict | None = None) -> dict:
 	- ``Authorization``: CNS do profissional solicitante (vinculado ao CNES).
 	"""
 	headers = {"X-Authorization-Server": f"Bearer {get_access_token()}"}
-	if settings.get("cns_solicitante"):
-		headers["Authorization"] = settings.cns_solicitante
+	cns = settings.get("cns_solicitante")
+	if not cns and settings.get("profissional_responsavel"):
+		cns = frappe.db.get_value("Healthcare Practitioner", settings.profissional_responsavel, "cns")
+	if cns:
+		headers["Authorization"] = cns
 	if extra:
 		headers.update(extra)
 	return headers

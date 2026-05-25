@@ -138,6 +138,18 @@ class TestRNDSClientToken(FrappeTestCase):
 		self.settings.save(ignore_permissions=True)
 		frappe.cache().delete_value("rnds_access_token")
 
+	def test_auth_header_uses_practitioner_cns(self):
+		from imunocare_clinic_ext import rnds_client
+
+		# profissional com CNS no cadastro → header Authorization usa esse CNS
+		s = frappe._dict(profissional_responsavel="HLC-PRAC-XYZ", cns_solicitante=None)
+		with patch.object(rnds_client, "get_access_token", return_value="T"), patch.object(
+			frappe.db, "get_value", return_value="700000000000000"
+		):
+			headers = rnds_client._ehr_auth_headers(s)
+		self.assertEqual(headers["Authorization"], "700000000000000")
+		self.assertEqual(headers["X-Authorization-Server"], "Bearer T")
+
 	def test_token_fetched_and_cached(self):
 		from imunocare_clinic_ext import rnds_client
 
