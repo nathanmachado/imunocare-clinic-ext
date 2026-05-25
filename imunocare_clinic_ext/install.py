@@ -32,6 +32,14 @@ NATIVE_PROPERTY_SETTERS = [
 	# Labels com termos mais claros / corrigindo tradução pt-BR ruim.
 	("Patient", "mobile", "label", "Celular / Whatsapp", "Data"),
 	("Patient", "report_preference", "label", "Preferência de Relatório", "Data"),
+	# Colaborador (Employee) obrigatório no cadastro do profissional de saúde.
+	("Healthcare Practitioner", "employee", "reqd", "1", "Check"),
+]
+
+# Custom fields obsoletos a remover (idempotente).
+OBSOLETE_CUSTOM_FIELDS = [
+	# CPF migrou de Healthcare Practitioner para Employee (cadastro primário).
+	("Healthcare Practitioner", "cpf"),
 ]
 
 
@@ -48,10 +56,19 @@ def install_imunization_customizations() -> None:
 	o novo schema (campos como ``is_vaccine`` em Medication).
 	"""
 	create_custom_fields(CUSTOM_FIELDS, update=True)
+	_remove_obsolete_fields()
 	_apply_property_setters()
 	_register_patient_history_doctypes()
 	_register_client_scripts()
 	frappe.clear_cache()
+
+
+def _remove_obsolete_fields() -> None:
+	"""Remove custom fields que foram movidos/descontinuados (idempotente)."""
+	for dt, fieldname in OBSOLETE_CUSTOM_FIELDS:
+		name = frappe.db.get_value("Custom Field", {"dt": dt, "fieldname": fieldname})
+		if name:
+			frappe.delete_doc("Custom Field", name, ignore_permissions=True, force=True)
 
 	# Import tardio: seed precisa que os custom fields existam no schema.
 	from imunocare_clinic_ext.seed import seed_pni_2026
@@ -111,7 +128,7 @@ frappe.ui.form.on('Healthcare Practitioner', {
 		}
 	},
 	before_save(frm) {
-		if (frm.doc.cpf && !frm.doc.cns) {
+		if (frm.doc.employee && !frm.doc.cns) {
 			frappe.show_alert(
 				{ message: __('Consultando CNS do profissional no RNDS antes de salvar...'), indicator: 'blue' },
 				10

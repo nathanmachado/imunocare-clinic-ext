@@ -85,7 +85,16 @@ class TestRndsImmunizationFields(FrappeTestCase):
 		super().setUpClass()
 		install_imunization_customizations()
 
-	def test_practitioner_cns_field(self):
-		self.assertTrue(
-			frappe.db.exists("Custom Field", {"dt": "Healthcare Practitioner", "fieldname": "cns"})
+	def test_cpf_no_employee_cns_no_practitioner(self):
+		# CPF é do colaborador (Employee); profissional só tem CNS (read-only).
+		self.assertTrue(frappe.db.exists("Custom Field", {"dt": "Employee", "fieldname": "cpf"}))
+		self.assertTrue(frappe.db.exists("Custom Field", {"dt": "Healthcare Practitioner", "fieldname": "cns"}))
+		self.assertFalse(frappe.db.exists("Custom Field", {"dt": "Healthcare Practitioner", "fieldname": "cpf"}))
+
+	def test_employee_obrigatorio_no_practitioner(self):
+		reqd = frappe.db.get_value(
+			"Property Setter",
+			{"doc_type": "Healthcare Practitioner", "field_name": "employee", "property": "reqd"},
+			"value",
 		)
+		self.assertEqual(reqd, "1")

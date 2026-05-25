@@ -94,6 +94,7 @@ fixtures = [
 				"Medication", "Therapy Plan Template", "Therapy Plan Template Detail",
 				"Patient", "Drug Prescription", "Patient Appointment",
 				"Treatment Plan Template", "Medication Request", "Healthcare Practitioner",
+				"Employee",
 			]],
 			["fieldname", "in", [
 				# Medication (Fase 1)
@@ -121,10 +122,10 @@ fixtures = [
 	{
 		"dt": "Property Setter",
 		"filters": [
-			["doc_type", "=", "Patient"],
+			["doc_type", "in", ["Patient", "Healthcare Practitioner"]],
 			["field_name", "in", [
 				"uid", "middle_name", "last_name", "dob", "mobile", "email",
-				"basic_info", "report_preference",
+				"basic_info", "report_preference", "employee",
 			]],
 			["property", "in", ["hidden", "reqd", "label"]],
 		],
@@ -197,6 +198,9 @@ doc_events = {
 	},
 	"Healthcare Practitioner": {
 		"validate": "imunocare_clinic_ext.practitioner_hooks.validate",
+	},
+	"Employee": {
+		"validate": "imunocare_clinic_ext.employee_hooks.validate",
 	},
 }
 

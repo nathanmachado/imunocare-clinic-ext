@@ -1,41 +1,35 @@
 """Hooks de Healthcare Practitioner (Fase 4 / RNDS).
 
-Ao salvar o cadastro do profissional, resolve o CNS pelo CPF via RNDS
-(GET /Practitioner) — análogo à resolução do CNS do paciente. Não-bloqueante:
-falha do RNDS apenas loga. Se o CNS não for encontrado, alerta o usuário.
+O CPF é do colaborador (Employee). Ao salvar o profissional de saúde, resolve o
+CNS no RNDS (GET /Practitioner) usando o CPF do Employee vinculado. Read-only,
+não-bloqueante; alerta se o colaborador não tiver CPF ou o CNS não for achado.
 """
 
 from __future__ import annotations
 
-import re
-
 import frappe
 from frappe import _
 
-from imunocare_clinic_ext.patient_hooks import is_valid_cpf
-
 
 def validate(doc, method=None) -> None:
-	_validate_cpf(doc)
 	_resolve_cns(doc)
 
 
-def _validate_cpf(doc) -> None:
-	raw = doc.get("cpf")
-	if not raw:
-		return
-	digits = re.sub(r"\D", "", raw)
-	if not is_valid_cpf(digits):
-		frappe.throw(_("CPF inválido: {0}").format(raw))
-	doc.cpf = digits
-
-
 def _resolve_cns(doc) -> None:
-	cpf = doc.get("cpf")
-	if not cpf:
+	if not doc.get("employee"):
 		return
-	cpf_mudou = True if doc.is_new() else doc.has_value_changed("cpf")
-	if doc.get("cns") and not cpf_mudou:
+
+	cpf = frappe.db.get_value("Employee", doc.employee, "cpf")
+	if not cpf:
+		frappe.msgprint(
+			_("O colaborador vinculado não possui CPF cadastrado — CNS não pôde ser resolvido."),
+			indicator="orange",
+			alert=True,
+		)
+		return
+
+	emp_mudou = True if doc.is_new() else doc.has_value_changed("employee")
+	if doc.get("cns") and not emp_mudou:
 		return
 
 	try:
@@ -53,7 +47,7 @@ def _resolve_cns(doc) -> None:
 		doc.cns = cns
 	else:
 		frappe.msgprint(
-			_("CNS do profissional não encontrado no RNDS para o CPF informado."),
+			_("CNS do profissional não encontrado no RNDS para o CPF do colaborador."),
 			indicator="orange",
 			alert=True,
 		)
