@@ -64,7 +64,7 @@ class TestRNDSSettings(FrappeTestCase):
 		self.settings.ambiente = "Homologação"
 		self.settings.save(ignore_permissions=True)
 		self.assertEqual(self.settings.url_token, "https://ehr-auth-hmg.saude.gov.br/api/token")
-		self.assertEqual(self.settings.url_ehr, "https://ehr-services.hmg.saude.gov.br/api/fhir/r4")
+		self.assertEqual(self.settings.url_ehr, "https://ehr-services-hmg.saude.gov.br/api/fhir/r4")
 
 	def test_normalize_uf(self):
 		from imunocare_clinic_ext.imunocare_clinic_ext.doctype.rnds_settings.rnds_settings import (
