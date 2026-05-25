@@ -83,14 +83,28 @@ def _extract_token(resp) -> str:
 		return resp.text.strip()
 
 
+def _ehr_auth_headers(settings, extra: dict | None = None) -> dict:
+	"""Headers de autenticação do EHR Services.
+
+	O RNDS exige DOIS headers nas chamadas FHIR:
+	- ``X-Authorization-Server``: Bearer com o access_token (do certificado).
+	- ``Authorization``: CNS do profissional solicitante (vinculado ao CNES).
+	"""
+	headers = {"X-Authorization-Server": f"Bearer {get_access_token()}"}
+	if settings.get("cns_solicitante"):
+		headers["Authorization"] = settings.cns_solicitante
+	if extra:
+		headers.update(extra)
+	return headers
+
+
 def ehr_get(path: str, params: dict | None = None) -> requests.Response:
 	"""GET autenticado no EHR Services (FHIR). ``path`` relativo a url_ehr."""
 	settings = _settings()
-	token = get_access_token()
 	url = f"{settings.url_ehr.rstrip('/')}/{path.lstrip('/')}"
 	return requests.get(
 		url,
-		headers={"X-Authorization-Server": f"Bearer {token}", "Accept": "application/fhir+json"},
+		headers=_ehr_auth_headers(settings, {"Accept": "application/fhir+json"}),
 		params=params or {},
 		timeout=30,
 	)
@@ -99,14 +113,10 @@ def ehr_get(path: str, params: dict | None = None) -> requests.Response:
 def ehr_post(path: str, payload: dict) -> requests.Response:
 	"""POST autenticado no EHR Services (FHIR). ``path`` relativo a url_ehr."""
 	settings = _settings()
-	token = get_access_token()
 	url = f"{settings.url_ehr.rstrip('/')}/{path.lstrip('/')}"
 	return requests.post(
 		url,
-		headers={
-			"X-Authorization-Server": f"Bearer {token}",
-			"Content-Type": "application/fhir+json",
-		},
+		headers=_ehr_auth_headers(settings, {"Content-Type": "application/fhir+json"}),
 		json=payload,
 		timeout=30,
 	)

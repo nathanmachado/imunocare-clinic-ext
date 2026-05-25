@@ -8,6 +8,7 @@
  "field_order": [
   "ambiente",
   "cnes",
+  "cns_solicitante",
   "uf",
   "endpoints_section",
   "url_token",
@@ -26,6 +27,7 @@
  "fields": [
   {"fieldname": "ambiente", "fieldtype": "Select", "label": "Ambiente", "options": "Homologação\nProdução", "default": "Homologação", "reqd": 1, "in_list_view": 1},
   {"fieldname": "cnes", "fieldtype": "Data", "label": "CNES do estabelecimento", "reqd": 1},
+  {"fieldname": "cns_solicitante", "fieldtype": "Data", "label": "CNS do profissional responsável", "description": "CNS de um profissional vinculado ao CNES, em nome de quem as requisições ao RNDS são feitas (header Authorization)."},
   {"fieldname": "uf", "fieldtype": "Data", "label": "UF (detectada do endereço da empresa)", "read_only": 1},
   {"fieldname": "endpoints_section", "fieldtype": "Section Break", "label": "Endpoints RNDS (preenchidos automaticamente)"},
   {"fieldname": "url_token", "fieldtype": "Data", "label": "URL de autenticação (EHR Auth /token)", "read_only": 1},
