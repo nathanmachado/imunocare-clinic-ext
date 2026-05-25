@@ -158,3 +158,59 @@ class TestRNDSClientToken(FrappeTestCase):
 			token2 = rnds_client.get_access_token()
 			self.assertEqual(token2, "TESTE-TOKEN-123")
 			mock_get2.assert_not_called()
+
+
+class TestResolveCns(FrappeTestCase):
+	def _fake_bundle(self, cns):
+		return {
+			"resourceType": "Bundle",
+			"entry": [
+				{
+					"resource": {
+						"resourceType": "Patient",
+						"identifier": [
+							{"system": "http://rnds.saude.gov.br/fhir/r4/NamingSystem/cpf", "value": "52998224725"},
+							{"system": "http://rnds.saude.gov.br/fhir/r4/NamingSystem/cns", "value": cns},
+						],
+					}
+				}
+			],
+		}
+
+	def test_resolve_cns_found(self):
+		from imunocare_clinic_ext import rnds_client
+
+		class FakeResp:
+			def __init__(self, data):
+				self._data = data
+			def raise_for_status(self):
+				pass
+			def json(self):
+				return self._data
+
+		with patch.object(rnds_client, "ehr_get", return_value=FakeResp(self._fake_bundle("700508547440008"))) as mock:
+			cns = rnds_client.resolve_cns("529.982.247-25")
+			self.assertEqual(cns, "700508547440008")
+			# query montada com o NamingSystem de CPF e CPF normalizado
+			_, kwargs = mock.call_args
+			self.assertIn("52998224725", kwargs["params"]["identifier"])
+			self.assertIn("NamingSystem/cpf", kwargs["params"]["identifier"])
+
+	def test_resolve_cns_not_found(self):
+		from imunocare_clinic_ext import rnds_client
+
+		class FakeResp:
+			def raise_for_status(self):
+				pass
+			def json(self):
+				return {"resourceType": "Bundle", "entry": []}
+
+		with patch.object(rnds_client, "ehr_get", return_value=FakeResp()):
+			self.assertIsNone(rnds_client.resolve_cns("52998224725"))
+
+	def test_resolve_cns_invalid_cpf_no_call(self):
+		from imunocare_clinic_ext import rnds_client
+
+		with patch.object(rnds_client, "ehr_get") as mock:
+			self.assertIsNone(rnds_client.resolve_cns("123"))
+			mock.assert_not_called()

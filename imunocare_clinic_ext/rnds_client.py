@@ -9,11 +9,17 @@ requests-pkcs12 — nunca é escrito em disco.
 
 from __future__ import annotations
 
+import re
+
 import requests
 from requests_pkcs12 import get as pkcs12_get
 
 import frappe
 from frappe import _
+
+# NamingSystems oficiais do RNDS (FHIR R4).
+CPF_SYSTEM = "http://rnds.saude.gov.br/fhir/r4/NamingSystem/cpf"
+CNS_SYSTEM = "http://rnds.saude.gov.br/fhir/r4/NamingSystem/cns"
 
 # Token cacheado por menos que a validade real (margem de segurança).
 _TOKEN_CACHE_KEY = "rnds_access_token"
@@ -104,3 +110,45 @@ def ehr_post(path: str, payload: dict) -> requests.Response:
 		json=payload,
 		timeout=30,
 	)
+
+
+# --- 4b: resolução de CNS por CPF ---
+
+
+def resolve_cns(cpf: str) -> str | None:
+	"""Resolve o CNS de um cidadão a partir do CPF, via GET /Patient (RNDS).
+
+	Retorna a primeira ocorrência de CNS no recurso Patient, ou None se não
+	encontrado. O CPF é normalizado para 11 dígitos.
+	"""
+	cpf = re.sub(r"\D", "", cpf or "")
+	if len(cpf) != 11:
+		return None
+
+	resp = ehr_get("Patient", params={"identifier": f"{CPF_SYSTEM}|{cpf}"})
+	resp.raise_for_status()
+	bundle = resp.json()
+
+	for entry in bundle.get("entry", []):
+		resource = entry.get("resource", {})
+		if resource.get("resourceType") != "Patient":
+			continue
+		for ident in resource.get("identifier", []):
+			if ident.get("system") == CNS_SYSTEM and ident.get("value"):
+				return re.sub(r"\D", "", ident["value"])
+	return None
+
+
+@frappe.whitelist()
+def buscar_cns_do_paciente(patient: str) -> dict:
+	"""Resolve e salva o CNS de um Patient a partir do seu CPF (RNDS)."""
+	cpf = frappe.db.get_value("Patient", patient, "cpf")
+	if not cpf:
+		frappe.throw(_("O paciente não possui CPF cadastrado."))
+
+	cns = resolve_cns(cpf)
+	if not cns:
+		return {"found": False, "message": _("CNS não encontrado no RNDS para este CPF.")}
+
+	frappe.db.set_value("Patient", patient, "cns", cns)
+	return {"found": True, "cns": cns, "message": _("CNS encontrado e salvo: {0}").format(cns)}

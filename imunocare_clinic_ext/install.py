@@ -50,6 +50,7 @@ def install_imunization_customizations() -> None:
 	create_custom_fields(CUSTOM_FIELDS, update=True)
 	_apply_property_setters()
 	_register_patient_history_doctypes()
+	_register_client_scripts()
 	frappe.clear_cache()
 
 	# Import tardio: seed precisa que os custom fields existam no schema.
@@ -70,6 +71,46 @@ def _apply_property_setters() -> None:
 			for_doctype=False,
 			validate_fields_for_doctype=False,
 		)
+
+
+_PATIENT_CNS_SCRIPT_NAME = "Imunocare - Patient Buscar CNS RNDS"
+_PATIENT_CNS_SCRIPT = """
+frappe.ui.form.on('Patient', {
+	refresh(frm) {
+		if (frm.is_new() || !frm.doc.cpf) return;
+		frm.add_custom_button(__('Buscar CNS no RNDS'), () => {
+			frappe.call({
+				method: 'imunocare_clinic_ext.rnds_client.buscar_cns_do_paciente',
+				args: { patient: frm.doc.name },
+				freeze: true,
+				freeze_message: __('Consultando o RNDS...'),
+				callback: (r) => {
+					const res = r.message || {};
+					frappe.show_alert({ message: res.message, indicator: res.found ? 'green' : 'orange' });
+					if (res.found) frm.reload_doc();
+				},
+			});
+		});
+	},
+});
+""".strip()
+
+
+def _register_client_scripts() -> None:
+	"""Cria/atualiza Client Scripts (idempotente). Armazenados no DB — não
+	dependem de build de assets, ideal para deploy em produção Docker."""
+	if not frappe.db.exists("DocType", "Client Script"):
+		return
+	if frappe.db.exists("Client Script", _PATIENT_CNS_SCRIPT_NAME):
+		doc = frappe.get_doc("Client Script", _PATIENT_CNS_SCRIPT_NAME)
+	else:
+		doc = frappe.new_doc("Client Script")
+		doc.name = _PATIENT_CNS_SCRIPT_NAME
+	doc.dt = "Patient"
+	doc.view = "Form"
+	doc.enabled = 1
+	doc.script = _PATIENT_CNS_SCRIPT
+	doc.save(ignore_permissions=True)
 
 
 def _register_patient_history_doctypes() -> None:
