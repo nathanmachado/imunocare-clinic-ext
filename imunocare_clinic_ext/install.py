@@ -142,13 +142,13 @@ function imunocare_render_carteira(frm) {
 			(card.doses || []).forEach((d) => {
 				const dt = d.data_aplicacao ? frappe.datetime.str_to_user(d.data_aplicacao) : '';
 				linhas += `<tr>
-					<td>${frappe.utils.escape_html(d.calendario || '')}</td>
 					<td>${frappe.utils.escape_html(d.vacina || '')}</td>
 					<td style="text-align:center">${d.dose_numero || ''}</td>
 					<td><span class="indicator-pill ${cores[d.status] || 'gray'}">${d.status}</span></td>
 					<td>${dt}</td>
 					<td>${frappe.utils.escape_html(d.lote || '')}</td>
 					<td>${frappe.utils.escape_html(d.responsavel || '')}</td>
+					<td>${frappe.utils.escape_html(d.calendario || '')}</td>
 				</tr>`;
 			});
 
@@ -159,7 +159,7 @@ function imunocare_render_carteira(frm) {
 				<div style="margin-bottom:16px">${chips}</div>
 				<table class="table table-bordered" style="font-size:13px">
 					<thead><tr>
-						<th>Calendário</th><th>Vacina</th><th>Dose</th><th>Situação</th><th>Aplicada em</th><th>Lote</th><th>Responsável</th>
+						<th>Vacina</th><th>Dose</th><th>Situação</th><th>Aplicada em</th><th>Lote</th><th>Responsável</th><th>Calendário</th>
 					</tr></thead>
 					<tbody>${linhas || '<tr><td colspan="7">Nenhuma dose no calendário PNI.</td></tr>'}</tbody>
 				</table>`;
