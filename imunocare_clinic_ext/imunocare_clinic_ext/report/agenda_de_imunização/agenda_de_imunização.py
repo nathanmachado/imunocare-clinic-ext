@@ -4,21 +4,19 @@ Resumo operacional dos atendimentos de vacinação num horizonte de datas
 (Hoje / Esta semana / Este mês / Personalizado). Uma linha por vacina de cada
 Patient Appointment, com: paciente, vacina, dose, estoque da vacina, se está
 pago, modalidade (Clínica/Domiciliar), endereço, situação operacional e um
-botão de WhatsApp pré-preenchido.
+botão de WhatsApp que abre a conversa do paciente no CRM.
 
 Reuso (ver feedback_reuse_first): parte do Patient Appointment nativo + child
 ``imun_vaccines`` (Imunocare Appointment Vaccine), estoque do ``Bin`` via
 ``imunocare_clinic_ext.api.dashboard.estoque_da_vacina`` e "pago" dos campos
 nativos do appointment. Nada de controle paralelo.
 
-A renderização (cores, botão WhatsApp, presets de data) fica no
-``agenda_imunizacao.js`` — armazenado em arquivo do app, carregado em runtime,
+A renderização (cores, botão WhatsApp→CRM, presets de data, largura total)
+fica no ``agenda_de_imunização.js`` — em arquivo do app, carregado em runtime,
 sem build de assets.
 """
 
 from __future__ import annotations
-
-from urllib.parse import quote
 
 import frappe
 from frappe import _
@@ -29,12 +27,6 @@ from imunocare_clinic_ext.api.dashboard import (
 	STATUS_REALIZADO,
 	_is_pago,
 	estoque_da_vacina,
-)
-
-# Mensagem padrão do WhatsApp (o time ajusta antes de enviar).
-_WA_MSG = (
-	"Olá {nome}, aqui é da Imunocare. "
-	"Sobre sua aplicação de {vacina} em {data}: podemos confirmar?"
 )
 
 
@@ -66,19 +58,17 @@ def _intervalo(filters: frappe._dict) -> tuple[str, str]:
 
 def _columns() -> list[dict]:
 	return [
-		{"label": _("Data/Hora"), "fieldname": "appointment_datetime", "fieldtype": "Datetime", "width": 145},
-		{"label": _("Paciente"), "fieldname": "patient", "fieldtype": "Link", "options": "Patient", "width": 110},
-		{"label": _("Nome"), "fieldname": "patient_name", "fieldtype": "Data", "width": 150},
-		{"label": _("Vacina"), "fieldname": "medication", "fieldtype": "Link", "options": "Medication", "width": 150},
-		{"label": _("Dose"), "fieldname": "dose_numero", "fieldtype": "Int", "width": 55},
-		{"label": _("Estoque"), "fieldname": "estoque", "fieldtype": "Float", "precision": "0", "width": 80},
-		{"label": _("Pago?"), "fieldname": "pago", "fieldtype": "Data", "width": 80},
-		{"label": _("Local"), "fieldname": "modalidade", "fieldtype": "Data", "width": 95},
-		{"label": _("Situação"), "fieldname": "situacao", "fieldtype": "Data", "width": 110},
-		{"label": _("Alerta"), "fieldname": "alerta", "fieldtype": "Data", "width": 130},
-		{"label": _("WhatsApp"), "fieldname": "whatsapp", "fieldtype": "Data", "width": 95},
-		{"label": _("Endereço"), "fieldname": "endereco", "fieldtype": "Data", "width": 220},
-		{"label": _("Agendamento"), "fieldname": "appointment", "fieldtype": "Link", "options": "Patient Appointment", "width": 130},
+		{"label": _("Data/Hora"), "fieldname": "appointment_datetime", "fieldtype": "Datetime", "width": 150},
+		{"label": _("Paciente"), "fieldname": "patient", "fieldtype": "Link", "options": "Patient", "width": 200},
+		{"label": _("Vacina"), "fieldname": "medication", "fieldtype": "Link", "options": "Medication", "width": 180},
+		{"label": _("Dose"), "fieldname": "dose_numero", "fieldtype": "Int", "width": 75},
+		{"label": _("Estoque"), "fieldname": "estoque", "fieldtype": "Float", "precision": "0", "width": 90},
+		{"label": _("Pago?"), "fieldname": "pago", "fieldtype": "Data", "width": 90},
+		{"label": _("Local"), "fieldname": "modalidade", "fieldtype": "Data", "width": 110},
+		{"label": _("Situação"), "fieldname": "situacao", "fieldtype": "Data", "width": 160},
+		{"label": _("WhatsApp"), "fieldname": "whatsapp", "fieldtype": "Data", "width": 120},
+		{"label": _("Endereço"), "fieldname": "endereco", "fieldtype": "Data", "width": 260},
+		{"label": _("Agendamento"), "fieldname": "appointment", "fieldtype": "Link", "options": "Patient Appointment", "width": 140},
 	]
 
 
@@ -99,15 +89,13 @@ def _data(filters: frappe._dict, de, ate) -> list[dict]:
 			pa.name AS appointment,
 			pa.appointment_datetime,
 			pa.appointment_date,
-			pa.patient, pa.patient_name,
-			p.mobile,
+			pa.patient,
 			pa.status,
 			pa.invoiced, pa.paid_amount, pa.ref_sales_invoice,
 			pa.imun_modalidade AS modalidade,
 			pa.imun_application_address_display AS endereco,
 			v.medication, v.dose_numero
 		FROM `tabPatient Appointment` pa
-		LEFT JOIN `tabPatient` p ON pa.patient = p.name
 		LEFT JOIN `tabImunocare Appointment Vaccine` v
 			ON v.parent = pa.name AND v.parenttype = 'Patient Appointment'
 		WHERE {" AND ".join(conditions)}
@@ -138,15 +126,18 @@ def _data(filters: frappe._dict, de, ate) -> list[dict]:
 				"appointment": r.appointment,
 				"appointment_datetime": r.appointment_datetime,
 				"patient": r.patient,
-				"patient_name": r.patient_name,
 				"medication": med,
 				"dose_numero": r.dose_numero,
 				"estoque": estoque_cache.get(med, 0.0) if med else None,
 				"pago": _("Pago") if pago else _("A pagar"),
 				"modalidade": r.modalidade or _("Clínica"),
 				"situacao": situacao,
-				"alerta": _("⚠ PAGO E ATRASADO") if (atrasado and pago) else "",
-				"whatsapp": _wa_link(r),
+				# Flag (sem coluna) consumida pelo .js: dobra o alerta de
+				# "pago e atrasado" dentro da própria coluna Situação.
+				"pago_atrasado": 1 if (atrasado and pago) else 0,
+				# A coluna WhatsApp é renderizada pelo .js a partir de "patient"
+				# (abre o Lead no CRM). Mantém o paciente acessível na célula.
+				"whatsapp": r.patient,
 				"endereco": r.endereco,
 			}
 		)
@@ -174,23 +165,3 @@ def _situacao(r, hoje) -> str:
 	if data == hoje:
 		return _("Hoje")
 	return _("Futuro")
-
-
-def _wa_link(r) -> str | None:
-	"""URL wa.me pré-preenchida; o ``.js`` transforma em botão clicável."""
-	fone = _somente_digitos(r.get("mobile"))
-	if not fone:
-		return None
-	if len(fone) <= 11:  # sem código do país → assume Brasil
-		fone = "55" + fone
-	data = frappe.utils.format_datetime(r.get("appointment_datetime"), "dd/MM HH:mm") if r.get("appointment_datetime") else ""
-	msg = _WA_MSG.format(
-		nome=(r.get("patient_name") or "").split(" ")[0],
-		vacina=r.get("medication") or _("sua vacina"),
-		data=data,
-	)
-	return f"https://wa.me/{fone}?text={quote(msg)}"
-
-
-def _somente_digitos(valor: str | None) -> str:
-	return "".join(c for c in (valor or "") if c.isdigit())

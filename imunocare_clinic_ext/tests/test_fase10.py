@@ -21,7 +21,6 @@ from imunocare_clinic_ext.install import (
 from imunocare_clinic_ext.imunocare_clinic_ext.report.agenda_de_imunização.agenda_de_imunização import (
 	_intervalo,
 	_situacao,
-	_wa_link,
 	execute,
 )
 
@@ -89,15 +88,6 @@ class TestFase10Dashboard(FrappeTestCase):
 		# Healthcare empurra vencidos não atendidos para "No Show" → conta como Atrasado.
 		self.assertEqual(_situacao(frappe._dict(status="No Show", appointment_date=ontem), hoje), "Atrasado")
 
-	def test_wa_link_normaliza_telefone(self):
-		link = _wa_link(frappe._dict(mobile="(11) 93333-3333", patient_name="Maria Silva",
-									 medication="Gripe", appointment_datetime=nowdate() + " 14:00:00"))
-		self.assertIn("https://wa.me/5511933333333", link)
-		self.assertIn("Maria", link)
-
-	def test_wa_link_sem_telefone_retorna_none(self):
-		self.assertIsNone(_wa_link(frappe._dict(mobile=None)))
-
 	# --- report execute ----------------------------------------------------
 
 	def test_intervalo_presets(self):
@@ -112,6 +102,9 @@ class TestFase10Dashboard(FrappeTestCase):
 	def test_execute_retorna_colunas_e_lista(self):
 		columns, data = execute({"periodo": "Este mês"})
 		fieldnames = {c["fieldname"] for c in columns}
-		for esperado in ("appointment_datetime", "medication", "estoque", "pago", "modalidade", "situacao", "whatsapp"):
+		for esperado in ("appointment_datetime", "patient", "medication", "estoque", "pago", "modalidade", "situacao", "whatsapp"):
 			self.assertIn(esperado, fieldnames)
+		# Coluna "Nome" (patient_name) e "Alerta" foram removidas (redundância/vazio).
+		self.assertNotIn("patient_name", fieldnames)
+		self.assertNotIn("alerta", fieldnames)
 		self.assertIsInstance(data, list)
