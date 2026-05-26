@@ -18,7 +18,7 @@ from imunocare_clinic_ext.install import (
 	_WORKSPACE_NAME,
 	install_imunization_customizations,
 )
-from imunocare_clinic_ext.imunocare_clinic_ext.report.agenda_imunizacao.agenda_imunizacao import (
+from imunocare_clinic_ext.imunocare_clinic_ext.report.agenda_de_imunização.agenda_de_imunização import (
 	_intervalo,
 	_situacao,
 	_wa_link,
