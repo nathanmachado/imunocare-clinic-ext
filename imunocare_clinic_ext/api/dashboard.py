@@ -14,7 +14,14 @@ armazenados no banco — sem build de assets.
 from __future__ import annotations
 
 import frappe
-from frappe.utils import nowdate
+from frappe.utils import get_last_day, getdate, nowdate
+
+# Abreviações de mês em pt-BR (1-indexado) para os rótulos das colunas da
+# projeção de estoque.
+_MESES_PT = (
+	"", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+	"Jul", "Ago", "Set", "Out", "Nov", "Dez",
+)
 
 # Status do Patient Appointment que indicam atendimento já realizado.
 STATUS_REALIZADO = ("Closed", "Checked Out")
@@ -27,31 +34,41 @@ STATUS_CANCELADO = ("Cancelled",)
 STATUS_NAO_RISCO = STATUS_REALIZADO + STATUS_CANCELADO
 
 
-def estoque_da_vacina(medication: str | None) -> float:
-	"""Soma do estoque (Bin.actual_qty) dos itens vinculados a uma vacina.
-
-	Medication (Healthcare) → ``linked_items`` → Item estocável → soma das
-	posições de estoque em todos os depósitos. Retorna 0 se a vacina não tiver
-	item vinculado ou não houver Bin.
-	"""
+def _item_codes_da_vacina(medication: str | None) -> list[str]:
+	"""Itens estocáveis vinculados a um Medication (Healthcare)."""
 	if not medication:
-		return 0.0
-
-	item_codes = frappe.get_all(
+		return []
+	codes = frappe.get_all(
 		"Medication Linked Item",
 		filters={"parent": medication, "parenttype": "Medication"},
 		pluck="item_code",
 	)
-	item_codes = [c for c in item_codes if c]
-	if not item_codes:
-		return 0.0
+	return [c for c in codes if c]
 
+
+def posicao_estoque(medication: str | None) -> dict:
+	"""Posição de estoque de uma vacina, somada em todos os depósitos.
+
+	Medication (Healthcare) → ``linked_items`` → Item estocável → soma do ``Bin``
+	nativo. Retorna ``{"actual": <em estoque>, "ordered": <em pedido de compra>}``.
+	Reusa os campos nativos do Bin — nenhum controle de estoque próprio.
+	"""
+	item_codes = _item_codes_da_vacina(medication)
+	if not item_codes:
+		return {"actual": 0.0, "ordered": 0.0}
 	res = frappe.get_all(
 		"Bin",
 		filters={"item_code": ("in", item_codes)},
-		fields=["sum(actual_qty) as qty"],
+		fields=["sum(actual_qty) as actual", "sum(ordered_qty) as ordered"],
 	)
-	return float(res[0].qty or 0) if res else 0.0
+	if not res:
+		return {"actual": 0.0, "ordered": 0.0}
+	return {"actual": float(res[0].actual or 0), "ordered": float(res[0].ordered or 0)}
+
+
+def estoque_da_vacina(medication: str | None) -> float:
+	"""Soma do estoque atual (Bin.actual_qty) dos itens vinculados a uma vacina."""
+	return posicao_estoque(medication)["actual"]
 
 
 def _vacinas_em_falta_codes() -> list[str]:
@@ -92,3 +109,101 @@ def atrasados_pagos() -> int:
 def _is_pago(row) -> bool:
 	"""Pago = faturado, ou com valor recebido, ou com fatura de venda vinculada."""
 	return bool(row.get("invoiced") or (row.get("paid_amount") or 0) > 0 or row.get("ref_sales_invoice"))
+
+
+# ---------------------------------------------------------------------------
+# Projeção de estoque x demanda dos agendamentos (Fase 11).
+# O ERPNext nativo (Stock Projected Qty / Item Shortage / Production Plan) só
+# enxerga demanda de Sales Order / Material Request / Work Order — nunca de
+# Patient Appointment. Aqui cruzamos os agendamentos futuros (1 linha de
+# Imunocare Appointment Vaccine = 1 dose) com a posição do Bin nativo.
+# ---------------------------------------------------------------------------
+
+
+def _meses_horizonte(meses: int):
+	"""Lista de ``(ano, mes, rotulo)`` a partir do mês corrente, ``meses`` à frente."""
+	hoje = getdate(nowdate())
+	ano, mes = hoje.year, hoje.month
+	out = []
+	for _i in range(meses):
+		out.append((ano, mes, f"{_MESES_PT[mes]}/{ano % 100:02d}"))
+		if mes == 12:
+			ano, mes = ano + 1, 1
+		else:
+			mes += 1
+	return out
+
+
+def projetar_estoque(meses: int = 3, incluir_em_pedido: bool = True) -> dict:
+	"""Projeta o saldo de cada vacina mês a mês contra a demanda dos agendamentos.
+
+	A demanda vem das linhas ``Imunocare Appointment Vaccine`` de Patient
+	Appointments com data de hoje em diante (não cancelados, não realizados) —
+	cada linha conta 1 dose. O saldo inicial é o estoque atual do Bin (mais o
+	que já está em pedido de compra, se ``incluir_em_pedido``), e vai sendo
+	consumido a cada mês.
+
+	Retorna ``{"meses": [rotulos], "linhas": [...]}`` — só vacinas que têm
+	alguma demanda no horizonte (vacina sem agendamento não gera linha).
+	"""
+	meses = max(1, min(int(meses or 3), 24))
+	horizonte = _meses_horizonte(meses)
+	hoje = getdate(nowdate())
+	fim = get_last_day(getdate(f"{horizonte[-1][0]}-{horizonte[-1][1]:02d}-01"))
+
+	rows = frappe.db.sql(
+		"""
+		SELECT v.medication AS medication,
+			YEAR(pa.appointment_date) AS ano,
+			MONTH(pa.appointment_date) AS mes,
+			COUNT(*) AS doses
+		FROM `tabPatient Appointment` pa
+		INNER JOIN `tabImunocare Appointment Vaccine` v
+			ON v.parent = pa.name AND v.parenttype = 'Patient Appointment'
+		WHERE pa.appointment_date BETWEEN %(de)s AND %(ate)s
+			AND v.medication IS NOT NULL AND v.medication != ''
+			AND pa.status NOT IN %(nao_demanda)s
+		GROUP BY v.medication, ano, mes
+		""",
+		{"de": hoje, "ate": fim, "nao_demanda": STATUS_NAO_RISCO},
+		as_dict=True,
+	)
+
+	demanda: dict[str, dict] = {}
+	for r in rows:
+		demanda.setdefault(r.medication, {})[(r.ano, r.mes)] = int(r.doses)
+
+	linhas = []
+	for med, por_mes in demanda.items():
+		pos = posicao_estoque(med)
+		inicial = pos["actual"] + (pos["ordered"] if incluir_em_pedido else 0.0)
+		saldo = inicial
+		saldos = []
+		for ano, mes, _rotulo in horizonte:
+			saldo -= por_mes.get((ano, mes), 0)
+			saldos.append(saldo)
+		demanda_total = sum(por_mes.values())
+		linhas.append(
+			{
+				"medication": med,
+				"estoque": pos["actual"],
+				"em_pedido": pos["ordered"],
+				"demanda_total": demanda_total,
+				"saldos": saldos,
+				# Repor = quanto falta para o saldo nunca ficar negativo no horizonte.
+				"repor": max(0.0, -saldos[-1]),
+			}
+		)
+
+	# Mais crítico primeiro (maior reposição), depois alfabético.
+	linhas.sort(key=lambda x: (-x["repor"], x["medication"]))
+	return {"meses": [r[2] for r in horizonte], "linhas": linhas}
+
+
+@frappe.whitelist()
+def vacinas_a_repor(meses: int = 3) -> int:
+	"""Number Card (Custom): nº de vacinas que precisam de reposição no horizonte.
+
+	Considera a demanda dos agendamentos contra o estoque atual + em pedido.
+	"""
+	return sum(1 for l in projetar_estoque(int(meses)).get("linhas", []) if l["repor"] > 0)

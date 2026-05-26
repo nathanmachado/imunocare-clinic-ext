@@ -260,8 +260,10 @@ _NC_ATEND_SEMANA = "Imunocare - Atendimentos da Semana"
 _NC_DOMICILIAR = "Imunocare - Domiciliares da Semana"
 _NC_ATRASADOS_PAGOS = "Imunocare - Atrasados Pagos"
 _NC_VACINAS_FALTA = "Imunocare - Vacinas em Falta"
+_NC_VACINAS_REPOR = "Imunocare - Vacinas a Repor"
 _WORKSPACE_NAME = "Imunização"
 _HEALTHCARE_CARD_LABEL = "Imunização"
+_REPORT_PROJECAO = "Projeção de Estoque de Vacinas"
 
 # (name, type, document_type, function, filters_json, method, color)
 _NUMBER_CARDS = [
@@ -273,6 +275,8 @@ _NUMBER_CARDS = [
 	 None, "imunocare_clinic_ext.api.dashboard.atrasados_pagos", "#E24C4C"),
 	(_NC_VACINAS_FALTA, "Custom", "Medication", "Count",
 	 None, "imunocare_clinic_ext.api.dashboard.vacinas_em_falta", "#F8814F"),
+	(_NC_VACINAS_REPOR, "Custom", "Medication", "Count",
+	 None, "imunocare_clinic_ext.api.dashboard.vacinas_a_repor", "#B8860B"),
 ]
 
 
@@ -319,10 +323,12 @@ def _workspace_content() -> str:
 		{"id": "imun_nc1", "type": "number_card", "data": {"number_card_name": _NC_ATEND_SEMANA, "col": 3}},
 		{"id": "imun_nc2", "type": "number_card", "data": {"number_card_name": _NC_ATRASADOS_PAGOS, "col": 3}},
 		{"id": "imun_nc3", "type": "number_card", "data": {"number_card_name": _NC_VACINAS_FALTA, "col": 3}},
+		{"id": "imun_nc5", "type": "number_card", "data": {"number_card_name": _NC_VACINAS_REPOR, "col": 3}},
 		{"id": "imun_nc4", "type": "number_card", "data": {"number_card_name": _NC_DOMICILIAR, "col": 3}},
-		{"id": "imun_sc1", "type": "shortcut", "data": {"shortcut_name": "Agenda da Semana", "col": 4}},
-		{"id": "imun_sc2", "type": "shortcut", "data": {"shortcut_name": "Calendário", "col": 4}},
-		{"id": "imun_sc3", "type": "shortcut", "data": {"shortcut_name": "Retornos Pendentes", "col": 4}},
+		{"id": "imun_sc1", "type": "shortcut", "data": {"shortcut_name": "Agenda da Semana", "col": 3}},
+		{"id": "imun_sc2", "type": "shortcut", "data": {"shortcut_name": "Calendário", "col": 3}},
+		{"id": "imun_sc4", "type": "shortcut", "data": {"shortcut_name": "Projeção de Estoque", "col": 3}},
+		{"id": "imun_sc3", "type": "shortcut", "data": {"shortcut_name": "Retornos Pendentes", "col": 3}},
 		{"id": "imun_card", "type": "card", "data": {"card_name": "Cadastros de Imunização", "col": 6}},
 	]
 	return frappe.as_json(blocks)
@@ -347,7 +353,7 @@ def _upsert_workspace() -> None:
 	doc.parent_page = "Healthcare" if frappe.db.exists("Workspace", "Healthcare") else ""
 	doc.content = _workspace_content()
 
-	for nc in (_NC_ATEND_SEMANA, _NC_ATRASADOS_PAGOS, _NC_VACINAS_FALTA, _NC_DOMICILIAR):
+	for nc in (_NC_ATEND_SEMANA, _NC_ATRASADOS_PAGOS, _NC_VACINAS_FALTA, _NC_VACINAS_REPOR, _NC_DOMICILIAR):
 		doc.append("number_cards", {"label": nc, "number_card_name": nc})
 
 	doc.append("shortcuts", {
@@ -357,6 +363,10 @@ def _upsert_workspace() -> None:
 	doc.append("shortcuts", {
 		"type": "DocType", "label": "Calendário", "link_to": "Patient Appointment",
 		"doc_view": "Calendar", "color": "Blue",
+	})
+	doc.append("shortcuts", {
+		"type": "Report", "label": "Projeção de Estoque", "link_to": _REPORT_PROJECAO,
+		"report_ref_doctype": "Patient Appointment", "color": "Yellow",
 	})
 	doc.append("shortcuts", {
 		"type": "Report", "label": "Retornos Pendentes", "link_to": "Retornos Pendentes",
@@ -389,27 +399,42 @@ def _inject_into_healthcare_workspace() -> None:
 		return
 	hc = frappe.get_doc("Workspace", "Healthcare")
 
-	# Já injetado?
-	if any(l.type == "Card Break" and l.label == _HEALTHCARE_CARD_LABEL for l in hc.links):
-		return
-
-	hc.append("links", {"type": "Card Break", "label": _HEALTHCARE_CARD_LABEL, "link_count": 3})
-	for label, link_to, link_type, is_qr in (
+	desejados = [
 		("Agenda de Imunização", "Agenda de Imunização", "Report", 1),
+		("Projeção de Estoque de Vacinas", _REPORT_PROJECAO, "Report", 1),
 		("Retornos Pendentes", "Retornos Pendentes", "Report", 1),
 		("Reações Adversas", "Adverse Reaction", "DocType", 0),
-	):
+	]
+
+	tem_card = any(l.type == "Card Break" and l.label == _HEALTHCARE_CARD_LABEL for l in hc.links)
+	dirty = False
+
+	if not tem_card:
+		hc.append("links", {"type": "Card Break", "label": _HEALTHCARE_CARD_LABEL, "link_count": len(desejados)})
+		dirty = True
+
+	# Idempotente por link: adiciona só os que ainda faltam (cobre upgrades onde
+	# o card já existia com menos links).
+	existentes = {l.label for l in hc.links if l.type == "Link"}
+	for label, link_to, link_type, is_qr in desejados:
+		if label in existentes:
+			continue
 		hc.append("links", {
 			"type": "Link", "label": label, "link_to": link_to,
 			"link_type": link_type, "is_query_report": is_qr, "hidden": 0, "onboard": 0, "link_count": 0,
 		})
+		dirty = True
 
-	# Adiciona o bloco visual 'card' ao final do content da Healthcare.
+	# Bloco visual 'card' ao final do content da Healthcare (só uma vez).
 	content = frappe.parse_json(hc.content or "[]")
-	content.append({"id": "imun_hc_card", "type": "card",
-					"data": {"card_name": _HEALTHCARE_CARD_LABEL, "col": 4}})
-	hc.content = frappe.as_json(content)
-	hc.save(ignore_permissions=True)
+	if not any(b.get("id") == "imun_hc_card" for b in content):
+		content.append({"id": "imun_hc_card", "type": "card",
+						"data": {"card_name": _HEALTHCARE_CARD_LABEL, "col": 4}})
+		hc.content = frappe.as_json(content)
+		dirty = True
+
+	if dirty:
+		hc.save(ignore_permissions=True)
 
 
 def after_install() -> None:
