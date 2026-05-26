@@ -60,6 +60,7 @@ def install_imunization_customizations() -> None:
 	_apply_property_setters()
 	_register_patient_history_doctypes()
 	_register_client_scripts()
+	_register_dashboard()
 	frappe.clear_cache()
 
 
@@ -247,6 +248,168 @@ def _register_patient_history_doctypes() -> None:
 		},
 	)
 	settings.save(ignore_permissions=True)
+
+
+# ---------------------------------------------------------------------------
+# Dashboard de Imunização (Fase 10) — Number Cards + Workspace, tudo no banco.
+# Reuso máximo (ver feedback_reuse_first): Calendar View nativa do Patient
+# Appointment, Script Reports e estoque do Bin. Nenhuma UI compilada.
+# ---------------------------------------------------------------------------
+
+_NC_ATEND_SEMANA = "Imunocare - Atendimentos da Semana"
+_NC_DOMICILIAR = "Imunocare - Domiciliares da Semana"
+_NC_ATRASADOS_PAGOS = "Imunocare - Atrasados Pagos"
+_NC_VACINAS_FALTA = "Imunocare - Vacinas em Falta"
+_WORKSPACE_NAME = "Imunização"
+_HEALTHCARE_CARD_LABEL = "Imunização"
+
+# (name, type, document_type, function, filters_json, method, color)
+_NUMBER_CARDS = [
+	(_NC_ATEND_SEMANA, "Document Type", "Patient Appointment", "Count",
+	 [["appointment_date", "Timespan", "this week"]], None, "#449CF0"),
+	(_NC_DOMICILIAR, "Document Type", "Patient Appointment", "Count",
+	 [["appointment_date", "Timespan", "this week"], ["imun_modalidade", "=", "Domiciliar"]], None, "#7C4DFF"),
+	(_NC_ATRASADOS_PAGOS, "Custom", "Patient Appointment", "Count",
+	 None, "imunocare_clinic_ext.api.dashboard.atrasados_pagos", "#E24C4C"),
+	(_NC_VACINAS_FALTA, "Custom", "Medication", "Count",
+	 None, "imunocare_clinic_ext.api.dashboard.vacinas_em_falta", "#F8814F"),
+]
+
+
+def _register_dashboard() -> None:
+	"""Cria/atualiza Number Cards, a Workspace 'Imunização' e injeta o bloco
+	'Imunização' na home do módulo Healthcare. Idempotente."""
+	if not frappe.db.exists("DocType", "Patient Appointment"):
+		return  # Healthcare ainda não instalado (primeira passada).
+	_upsert_number_cards()
+	_upsert_workspace()
+	_inject_into_healthcare_workspace()
+
+
+def _upsert_number_cards() -> None:
+	for name, ctype, doctype, func, filters, method, color in _NUMBER_CARDS:
+		if frappe.db.exists("Number Card", name):
+			doc = frappe.get_doc("Number Card", name)
+		else:
+			doc = frappe.new_doc("Number Card")
+			doc.name = name
+			# Number Card.autoname() sobrescreve o name pelo label; trava o name.
+			doc.flags.name_set = True
+		doc.label = name.replace("Imunocare - ", "")
+		doc.type = ctype
+		doc.document_type = doctype
+		doc.function = func
+		doc.is_public = 1
+		doc.show_percentage_stats = 0
+		doc.color = color
+		doc.filters_json = frappe.as_json(filters) if filters else "[]"
+		doc.method = method or ""
+		doc.save(ignore_permissions=True)
+		# O frappe.db.exists acima cacheia um miss negativo para este nome; a
+		# validação de link da Workspace usa get_value(cache=True) e pegaria
+		# esse miss. Limpa o cache do documento para o link ser resolvido.
+		frappe.clear_document_cache("Number Card", doc.name)
+
+
+def _workspace_content() -> str:
+	"""Blocos de layout da Workspace 'Imunização'."""
+	blocks = [
+		{"id": "imun_hdr", "type": "header",
+		 "data": {"text": "<span class='h4'><b>Imunização — Painel Operacional</b></span>", "col": 12}},
+		{"id": "imun_nc1", "type": "number_card", "data": {"number_card_name": _NC_ATEND_SEMANA, "col": 3}},
+		{"id": "imun_nc2", "type": "number_card", "data": {"number_card_name": _NC_ATRASADOS_PAGOS, "col": 3}},
+		{"id": "imun_nc3", "type": "number_card", "data": {"number_card_name": _NC_VACINAS_FALTA, "col": 3}},
+		{"id": "imun_nc4", "type": "number_card", "data": {"number_card_name": _NC_DOMICILIAR, "col": 3}},
+		{"id": "imun_sc1", "type": "shortcut", "data": {"shortcut_name": "Agenda da Semana", "col": 4}},
+		{"id": "imun_sc2", "type": "shortcut", "data": {"shortcut_name": "Calendário", "col": 4}},
+		{"id": "imun_sc3", "type": "shortcut", "data": {"shortcut_name": "Retornos Pendentes", "col": 4}},
+		{"id": "imun_card", "type": "card", "data": {"card_name": "Cadastros de Imunização", "col": 6}},
+	]
+	return frappe.as_json(blocks)
+
+
+def _upsert_workspace() -> None:
+	if frappe.db.exists("Workspace", _WORKSPACE_NAME):
+		doc = frappe.get_doc("Workspace", _WORKSPACE_NAME)
+		doc.set("links", [])
+		doc.set("shortcuts", [])
+		doc.set("number_cards", [])
+		doc.set("charts", [])
+	else:
+		doc = frappe.new_doc("Workspace")
+		doc.name = _WORKSPACE_NAME
+
+	doc.label = _WORKSPACE_NAME
+	doc.title = _WORKSPACE_NAME
+	doc.module = "Imunocare Clinic Ext"
+	doc.public = 1
+	doc.icon = "heart"
+	doc.parent_page = "Healthcare" if frappe.db.exists("Workspace", "Healthcare") else ""
+	doc.content = _workspace_content()
+
+	for nc in (_NC_ATEND_SEMANA, _NC_ATRASADOS_PAGOS, _NC_VACINAS_FALTA, _NC_DOMICILIAR):
+		doc.append("number_cards", {"label": nc, "number_card_name": nc})
+
+	doc.append("shortcuts", {
+		"type": "Report", "label": "Agenda da Semana", "link_to": "Agenda de Imunização",
+		"report_ref_doctype": "Patient Appointment", "color": "Green",
+	})
+	doc.append("shortcuts", {
+		"type": "DocType", "label": "Calendário", "link_to": "Patient Appointment",
+		"doc_view": "Calendar", "color": "Blue",
+	})
+	doc.append("shortcuts", {
+		"type": "Report", "label": "Retornos Pendentes", "link_to": "Retornos Pendentes",
+		"report_ref_doctype": "Medication Request", "color": "Orange",
+	})
+
+	# Card "Cadastros de Imunização": Card Break + Links (DocTypes nativos).
+	doc.append("links", {"type": "Card Break", "label": "Cadastros de Imunização", "link_count": 4})
+	for label, link_to, link_type, is_qr in (
+		("Agendamentos", "Patient Appointment", "DocType", 0),
+		("Reações Adversas", "Adverse Reaction", "DocType", 0),
+		("Vacinas (Medication)", "Medication", "DocType", 0),
+		("Calendários PNI", "Therapy Plan Template", "DocType", 0),
+	):
+		doc.append("links", {
+			"type": "Link", "label": label, "link_to": link_to,
+			"link_type": link_type, "is_query_report": is_qr, "hidden": 0, "onboard": 0, "link_count": 0,
+		})
+
+	doc.save(ignore_permissions=True)
+
+
+def _inject_into_healthcare_workspace() -> None:
+	"""Adiciona o bloco/card 'Imunização' na home do módulo Healthcare.
+
+	Re-aplicado a cada ``after_migrate`` para sobreviver à re-sincronização da
+	Workspace padrão do Healthcare. Idempotente: pula se o card já existe.
+	"""
+	if not frappe.db.exists("Workspace", "Healthcare"):
+		return
+	hc = frappe.get_doc("Workspace", "Healthcare")
+
+	# Já injetado?
+	if any(l.type == "Card Break" and l.label == _HEALTHCARE_CARD_LABEL for l in hc.links):
+		return
+
+	hc.append("links", {"type": "Card Break", "label": _HEALTHCARE_CARD_LABEL, "link_count": 3})
+	for label, link_to, link_type, is_qr in (
+		("Agenda de Imunização", "Agenda de Imunização", "Report", 1),
+		("Retornos Pendentes", "Retornos Pendentes", "Report", 1),
+		("Reações Adversas", "Adverse Reaction", "DocType", 0),
+	):
+		hc.append("links", {
+			"type": "Link", "label": label, "link_to": link_to,
+			"link_type": link_type, "is_query_report": is_qr, "hidden": 0, "onboard": 0, "link_count": 0,
+		})
+
+	# Adiciona o bloco visual 'card' ao final do content da Healthcare.
+	content = frappe.parse_json(hc.content or "[]")
+	content.append({"id": "imun_hc_card", "type": "card",
+					"data": {"card_name": _HEALTHCARE_CARD_LABEL, "col": 4}})
+	hc.content = frappe.as_json(content)
+	hc.save(ignore_permissions=True)
 
 
 def after_install() -> None:
