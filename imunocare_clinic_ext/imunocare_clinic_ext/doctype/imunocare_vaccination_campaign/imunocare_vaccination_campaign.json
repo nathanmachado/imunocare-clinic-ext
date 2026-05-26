@@ -1,0 +1,196 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-05-26 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "title_field": "titulo",
+ "field_order": [
+  "naming_series",
+  "titulo",
+  "empresa",
+  "status",
+  "col_break_head",
+  "data_inicio",
+  "data_fim",
+  "modalidade",
+  "local",
+  "sec_escopo",
+  "price_list",
+  "vacinas_ofertadas",
+  "sec_roster",
+  "colaboradores",
+  "sec_fat",
+  "sales_order",
+  "sales_invoice",
+  "col_break_fat",
+  "total_colaboradores",
+  "total_doses_aplicadas",
+  "valor_estimado",
+  "valor_faturado"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Série",
+   "options": "CAMP-.YYYY.-",
+   "default": "CAMP-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "titulo",
+   "fieldtype": "Data",
+   "label": "Título da campanha",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_global_search": 1,
+   "description": "Ex.: Campanha Gripe 2026 — ACME Ltda."
+  },
+  {
+   "fieldname": "empresa",
+   "fieldtype": "Link",
+   "label": "Empresa contratante",
+   "options": "Customer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Cliente faturado pela campanha (grupo 'Empresa')."
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Rascunho\nLista Importada\nConfirmada\nEm Aplicação\nFechada\nFaturada\nCancelada",
+   "default": "Rascunho",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "col_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "data_inicio",
+   "fieldtype": "Date",
+   "label": "Data de início",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "data_fim",
+   "fieldtype": "Date",
+   "label": "Data de término"
+  },
+  {
+   "fieldname": "modalidade",
+   "fieldtype": "Select",
+   "label": "Modalidade",
+   "options": "Na empresa\nNa clínica",
+   "default": "Na empresa"
+  },
+  {
+   "fieldname": "local",
+   "fieldtype": "Small Text",
+   "label": "Local de aplicação"
+  },
+  {
+   "fieldname": "sec_escopo",
+   "fieldtype": "Section Break",
+   "label": "Escopo e preços"
+  },
+  {
+   "fieldname": "price_list",
+   "fieldtype": "Link",
+   "label": "Tabela de preços",
+   "options": "Price List",
+   "reqd": 1,
+   "description": "Tabela negociada da empresa (fallback: 'Empresarial'). Define o preço da dose no orçamento/fatura."
+  },
+  {
+   "fieldname": "vacinas_ofertadas",
+   "fieldtype": "Table",
+   "label": "Vacinas ofertadas",
+   "options": "Imunocare Campaign Vaccine",
+   "description": "Vacinas e doses por colaborador previstas — base da estimativa do orçamento (Sales Order)."
+  },
+  {
+   "fieldname": "sec_roster",
+   "fieldtype": "Section Break",
+   "label": "Colaboradores"
+  },
+  {
+   "fieldname": "colaboradores",
+   "fieldtype": "Table",
+   "label": "Lista de colaboradores",
+   "options": "Imunocare Campaign Colaborador"
+  },
+  {
+   "fieldname": "sec_fat",
+   "fieldtype": "Section Break",
+   "label": "Faturamento"
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "label": "Pedido de Venda (orçamento)",
+   "options": "Sales Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Fatura (fechamento)",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_fat",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_colaboradores",
+   "fieldtype": "Int",
+   "label": "Colaboradores na lista",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_doses_aplicadas",
+   "fieldtype": "Int",
+   "label": "Doses aplicadas",
+   "read_only": 1
+  },
+  {
+   "fieldname": "valor_estimado",
+   "fieldtype": "Currency",
+   "label": "Valor estimado (orçamento)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "valor_faturado",
+   "fieldtype": "Currency",
+   "label": "Valor faturado",
+   "read_only": 1
+  }
+ ],
+ "modified": "2026-05-26 00:00:00.000000",
+ "module": "Imunocare Clinic Ext",
+ "name": "Imunocare Vaccination Campaign",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "print": 1, "email": 1, "share": 1
+  },
+  {
+   "role": "Healthcare Administrator",
+   "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "print": 1, "email": 1, "share": 1
+  },
+  {
+   "role": "Nursing User",
+   "read": 1, "write": 1, "report": 1, "print": 1
+  }
+ ]
+}

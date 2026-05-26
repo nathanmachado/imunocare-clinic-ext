@@ -1,0 +1,105 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-05-26 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": [
+  "nome",
+  "cpf",
+  "data_nascimento",
+  "sexo",
+  "telefone",
+  "email",
+  "cargo",
+  "matricula",
+  "col_break_vinculo",
+  "patient",
+  "status",
+  "appointment"
+ ],
+ "fields": [
+  {
+   "fieldname": "nome",
+   "fieldtype": "Data",
+   "label": "Nome",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "cpf",
+   "fieldtype": "Data",
+   "label": "CPF",
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "data_nascimento",
+   "fieldtype": "Date",
+   "label": "Nascimento"
+  },
+  {
+   "fieldname": "sexo",
+   "fieldtype": "Select",
+   "label": "Sexo",
+   "options": "\nMasculino\nFeminino\nOutro"
+  },
+  {
+   "fieldname": "telefone",
+   "fieldtype": "Data",
+   "label": "Telefone"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "cargo",
+   "fieldtype": "Data",
+   "label": "Cargo"
+  },
+  {
+   "fieldname": "matricula",
+   "fieldtype": "Data",
+   "label": "Matrícula"
+  },
+  {
+   "fieldname": "col_break_vinculo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "patient",
+   "fieldtype": "Link",
+   "label": "Paciente",
+   "options": "Patient",
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Preenchido na importação (casado por CPF ou criado)."
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pendente\nAplicado\nRecusou\nFaltou",
+   "default": "Pendente",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "appointment",
+   "fieldtype": "Link",
+   "label": "Atendimento",
+   "options": "Patient Appointment",
+   "read_only": 1
+  }
+ ],
+ "modified": "2026-05-26 00:00:00.000000",
+ "module": "Imunocare Clinic Ext",
+ "name": "Imunocare Campaign Colaborador",
+ "owner": "Administrator",
+ "permissions": []
+}

@@ -346,6 +346,17 @@ CUSTOM_FIELDS = {
 			"insert_after": "imun_application_address_display",
 			"description": "Vacinas planejadas para este atendimento (fonte da variável de vacinas dos templates WhatsApp).",
 		},
+		{
+			# Fase 12: amarra a aplicação a uma campanha corporativa. É a "cola"
+			# do faturamento B2B — as doses por empresa saem de um GROUP BY neste
+			# campo. Vazio = atendimento avulso (B2C) normal.
+			"fieldname": "imun_campaign",
+			"label": "Campanha corporativa",
+			"fieldtype": "Link",
+			"options": "Imunocare Vaccination Campaign",
+			"insert_after": "imun_vaccines",
+			"description": "Se preenchido, a dose é faturada na campanha (empresa), não para o paciente.",
+		},
 	],
 	# ---- Fase 5 ----
 	"Treatment Plan Template": [

@@ -59,9 +59,30 @@ def install_imunization_customizations() -> None:
 	_remove_obsolete_fields()
 	_apply_property_setters()
 	_register_patient_history_doctypes()
+	_ensure_empresarial_price_list()
 	_register_client_scripts()
 	_register_dashboard()
 	frappe.clear_cache()
+
+
+_PRICE_LIST_EMPRESARIAL = "Empresarial"
+
+
+def _ensure_empresarial_price_list() -> None:
+	"""Garante a Price List 'Empresarial' (fallback de preços de campanha B2B).
+
+	Idempotente. Os Item Price (preço por vacina) são cadastrados pelo operador
+	conforme a negociação — não semeamos valores fictícios em produção.
+	"""
+	if not frappe.db.exists("DocType", "Price List"):
+		return
+	if frappe.db.exists("Price List", _PRICE_LIST_EMPRESARIAL):
+		return
+	pl = frappe.new_doc("Price List")
+	pl.price_list_name = _PRICE_LIST_EMPRESARIAL
+	pl.selling = 1
+	pl.enabled = 1
+	pl.save(ignore_permissions=True)
 
 
 def _remove_obsolete_fields() -> None:
@@ -195,15 +216,82 @@ frappe.ui.form.on('Healthcare Practitioner', {
 """.strip()
 
 
+_CAMPAIGN_SCRIPT_NAME = "Imunocare - Campanha Botões"
+_CAMPAIGN_SCRIPT = """
+frappe.ui.form.on('Imunocare Vaccination Campaign', {
+	refresh(frm) {
+		if (frm.is_new()) return;
+
+		// Importar lista de colaboradores (cola CSV: nome,cpf,nascimento,sexo,telefone,email,cargo,matricula)
+		frm.add_custom_button(__('Importar colaboradores'), () => {
+			const d = new frappe.ui.Dialog({
+				title: __('Importar lista (CSV)'),
+				fields: [
+					{ fieldtype: 'HTML', options:
+						'<p style="color:var(--text-muted)">Cole o CSV com cabeçalho: '
+						+ '<code>nome,cpf,nascimento,sexo,telefone,email,cargo,matricula</code>. '
+						+ 'Aceita separador <code>,</code> ou <code>;</code>. Datas em AAAA-MM-DD.</p>' },
+					{ fieldtype: 'Code', fieldname: 'csv_text', label: __('CSV'), reqd: 1 },
+				],
+				primary_action_label: __('Importar'),
+				primary_action(values) {
+					d.hide();
+					frappe.call({
+						method: 'imunocare_clinic_ext.api.campaign.importar_colaboradores',
+						args: { campaign: frm.doc.name, csv_text: values.csv_text },
+						freeze: true,
+						freeze_message: __('Importando colaboradores...'),
+						callback: () => frm.reload_doc(),
+					});
+				},
+			});
+			d.show();
+		}, __('Ações'));
+
+		// Confirmar → gera o orçamento (Sales Order)
+		if (!frm.doc.sales_order && (frm.doc.colaboradores || []).length && (frm.doc.vacinas_ofertadas || []).length) {
+			frm.add_custom_button(__('Confirmar (gerar orçamento)'), () => {
+				frappe.confirm(__('Gerar o orçamento (Sales Order) para a empresa?'), () => {
+					frappe.call({
+						method: 'imunocare_clinic_ext.api.campaign.confirmar_campanha',
+						args: { campaign: frm.doc.name },
+						freeze: true,
+						callback: (r) => { if (r.message) frappe.set_route('Form', 'Sales Order', r.message); },
+					});
+				});
+			}, __('Ações'));
+		}
+
+		// Gerar Fatura (Sales Invoice) das doses aplicadas
+		if (frm.doc.sales_order && !frm.doc.sales_invoice) {
+			frm.add_custom_button(__('Gerar Fatura'), () => {
+				frappe.confirm(__('Faturar as doses aplicadas para a empresa?'), () => {
+					frappe.call({
+						method: 'imunocare_clinic_ext.api.campaign.gerar_fatura',
+						args: { campaign: frm.doc.name },
+						freeze: true,
+						callback: (r) => { if (r.message) frappe.set_route('Form', 'Sales Invoice', r.message); },
+					});
+				});
+			}, __('Ações')).addClass('btn-primary');
+		}
+	},
+});
+""".strip()
+
+
 def _register_client_scripts() -> None:
 	"""Cria/atualiza Client Scripts (idempotente). Armazenados no DB — não
 	dependem de build de assets, ideal para deploy em produção Docker."""
 	if not frappe.db.exists("DocType", "Client Script"):
 		return
-	for name, dt, script in (
+	scripts = [
 		(_PATIENT_CNS_SCRIPT_NAME, "Patient", _PATIENT_CNS_SCRIPT),
 		(_PRACTITIONER_CNS_SCRIPT_NAME, "Healthcare Practitioner", _PRACTITIONER_CNS_SCRIPT),
-	):
+	]
+	if frappe.db.exists("DocType", "Imunocare Vaccination Campaign"):
+		scripts.append((_CAMPAIGN_SCRIPT_NAME, "Imunocare Vaccination Campaign", _CAMPAIGN_SCRIPT))
+	for name, dt, script in scripts:
 		if frappe.db.exists("Client Script", name):
 			doc = frappe.get_doc("Client Script", name)
 		else:
@@ -261,9 +349,12 @@ _NC_DOMICILIAR = "Imunocare - Domiciliares da Semana"
 _NC_ATRASADOS_PAGOS = "Imunocare - Atrasados Pagos"
 _NC_VACINAS_FALTA = "Imunocare - Vacinas em Falta"
 _NC_VACINAS_REPOR = "Imunocare - Vacinas a Repor"
+_NC_CAMPANHAS_FATURAR = "Imunocare - Campanhas a Faturar"
 _WORKSPACE_NAME = "Imunização"
 _HEALTHCARE_CARD_LABEL = "Imunização"
 _REPORT_PROJECAO = "Projeção de Estoque de Vacinas"
+_REPORT_FECHAMENTO = "Fechamento de Campanha"
+_CAMPAIGN_DOCTYPE = "Imunocare Vaccination Campaign"
 
 # (name, type, document_type, function, filters_json, method, color)
 _NUMBER_CARDS = [
@@ -277,6 +368,8 @@ _NUMBER_CARDS = [
 	 None, "imunocare_clinic_ext.api.dashboard.vacinas_em_falta", "#F8814F"),
 	(_NC_VACINAS_REPOR, "Custom", "Medication", "Count",
 	 None, "imunocare_clinic_ext.api.dashboard.vacinas_a_repor", "#B8860B"),
+	(_NC_CAMPANHAS_FATURAR, "Custom", _CAMPAIGN_DOCTYPE, "Count",
+	 None, "imunocare_clinic_ext.api.campaign.campanhas_a_faturar", "#36A2A2"),
 ]
 
 
@@ -292,6 +385,9 @@ def _register_dashboard() -> None:
 
 def _upsert_number_cards() -> None:
 	for name, ctype, doctype, func, filters, method, color in _NUMBER_CARDS:
+		# Pula cards cujo DocType base ainda não foi migrado (1ª passada).
+		if not frappe.db.exists("DocType", doctype):
+			continue
 		if frappe.db.exists("Number Card", name):
 			doc = frappe.get_doc("Number Card", name)
 		else:
@@ -324,12 +420,16 @@ def _workspace_content() -> str:
 		{"id": "imun_nc2", "type": "number_card", "data": {"number_card_name": _NC_ATRASADOS_PAGOS, "col": 3}},
 		{"id": "imun_nc3", "type": "number_card", "data": {"number_card_name": _NC_VACINAS_FALTA, "col": 3}},
 		{"id": "imun_nc5", "type": "number_card", "data": {"number_card_name": _NC_VACINAS_REPOR, "col": 3}},
+		{"id": "imun_nc6", "type": "number_card", "data": {"number_card_name": _NC_CAMPANHAS_FATURAR, "col": 3}},
 		{"id": "imun_nc4", "type": "number_card", "data": {"number_card_name": _NC_DOMICILIAR, "col": 3}},
 		{"id": "imun_sc1", "type": "shortcut", "data": {"shortcut_name": "Agenda da Semana", "col": 3}},
 		{"id": "imun_sc2", "type": "shortcut", "data": {"shortcut_name": "Calendário", "col": 3}},
 		{"id": "imun_sc4", "type": "shortcut", "data": {"shortcut_name": "Projeção de Estoque", "col": 3}},
+		{"id": "imun_sc5", "type": "shortcut", "data": {"shortcut_name": "Campanhas", "col": 3}},
+		{"id": "imun_sc6", "type": "shortcut", "data": {"shortcut_name": "Fechamento de Campanha", "col": 3}},
 		{"id": "imun_sc3", "type": "shortcut", "data": {"shortcut_name": "Retornos Pendentes", "col": 3}},
 		{"id": "imun_card", "type": "card", "data": {"card_name": "Cadastros de Imunização", "col": 6}},
+		{"id": "imun_card2", "type": "card", "data": {"card_name": "Campanhas Corporativas", "col": 6}},
 	]
 	return frappe.as_json(blocks)
 
@@ -353,7 +453,12 @@ def _upsert_workspace() -> None:
 	doc.parent_page = "Healthcare" if frappe.db.exists("Workspace", "Healthcare") else ""
 	doc.content = _workspace_content()
 
-	for nc in (_NC_ATEND_SEMANA, _NC_ATRASADOS_PAGOS, _NC_VACINAS_FALTA, _NC_VACINAS_REPOR, _NC_DOMICILIAR):
+	tem_campanha = frappe.db.exists("DocType", _CAMPAIGN_DOCTYPE)
+
+	cards = [_NC_ATEND_SEMANA, _NC_ATRASADOS_PAGOS, _NC_VACINAS_FALTA, _NC_VACINAS_REPOR, _NC_DOMICILIAR]
+	if tem_campanha:
+		cards.append(_NC_CAMPANHAS_FATURAR)
+	for nc in cards:
 		doc.append("number_cards", {"label": nc, "number_card_name": nc})
 
 	doc.append("shortcuts", {
@@ -368,6 +473,14 @@ def _upsert_workspace() -> None:
 		"type": "Report", "label": "Projeção de Estoque", "link_to": _REPORT_PROJECAO,
 		"report_ref_doctype": "Patient Appointment", "color": "Yellow",
 	})
+	if tem_campanha:
+		doc.append("shortcuts", {
+			"type": "DocType", "label": "Campanhas", "link_to": _CAMPAIGN_DOCTYPE, "color": "Cyan",
+		})
+		doc.append("shortcuts", {
+			"type": "Report", "label": "Fechamento de Campanha", "link_to": _REPORT_FECHAMENTO,
+			"report_ref_doctype": _CAMPAIGN_DOCTYPE, "color": "Purple",
+		})
 	doc.append("shortcuts", {
 		"type": "Report", "label": "Retornos Pendentes", "link_to": "Retornos Pendentes",
 		"report_ref_doctype": "Medication Request", "color": "Orange",
@@ -385,6 +498,19 @@ def _upsert_workspace() -> None:
 			"type": "Link", "label": label, "link_to": link_to,
 			"link_type": link_type, "is_query_report": is_qr, "hidden": 0, "onboard": 0, "link_count": 0,
 		})
+
+	# Card "Campanhas Corporativas": gestão B2B (Fase 12).
+	if tem_campanha:
+		doc.append("links", {"type": "Card Break", "label": "Campanhas Corporativas", "link_count": 3})
+		for label, link_to, link_type, is_qr in (
+			("Campanhas de Vacinação", _CAMPAIGN_DOCTYPE, "DocType", 0),
+			("Fechamento de Campanha", _REPORT_FECHAMENTO, "Report", 1),
+			("Empresas (Customer)", "Customer", "DocType", 0),
+		):
+			doc.append("links", {
+				"type": "Link", "label": label, "link_to": link_to,
+				"link_type": link_type, "is_query_report": is_qr, "hidden": 0, "onboard": 0, "link_count": 0,
+			})
 
 	doc.save(ignore_permissions=True)
 
@@ -405,6 +531,8 @@ def _inject_into_healthcare_workspace() -> None:
 		("Retornos Pendentes", "Retornos Pendentes", "Report", 1),
 		("Reações Adversas", "Adverse Reaction", "DocType", 0),
 	]
+	if frappe.db.exists("DocType", _CAMPAIGN_DOCTYPE):
+		desejados.append(("Campanhas de Vacinação", _CAMPAIGN_DOCTYPE, "DocType", 0))
 
 	tem_card = any(l.type == "Card Break" and l.label == _HEALTHCARE_CARD_LABEL for l in hc.links)
 	dirty = False
@@ -424,6 +552,14 @@ def _inject_into_healthcare_workspace() -> None:
 			"link_type": link_type, "is_query_report": is_qr, "hidden": 0, "onboard": 0, "link_count": 0,
 		})
 		dirty = True
+
+	# Mantém o link_count do Card Break coerente (agrupa os N links seguintes).
+	labels_desejados = {d[0] for d in desejados}
+	n_links = sum(1 for l in hc.links if l.type == "Link" and l.label in labels_desejados)
+	for l in hc.links:
+		if l.type == "Card Break" and l.label == _HEALTHCARE_CARD_LABEL and l.link_count != n_links:
+			l.link_count = n_links
+			dirty = True
 
 	# Bloco visual 'card' ao final do content da Healthcare (só uma vez).
 	content = frappe.parse_json(hc.content or "[]")
