@@ -69,7 +69,7 @@ frappe.query_reports["Agenda de Imunização"] = {
 			return `<button type="button" class="btn btn-xs btn-primary imun-crm-open"
 				data-patient="${p}" style="white-space:nowrap"
 				title="${__("Abrir comunicação com o paciente no CRM")}">
-				<i class="fa fa-comments"></i> ${__("Atender")}</button>`;
+				<i class="fa fa-comments"></i></button>`;
 		}
 
 		if (column.fieldname === "estoque" && data && data.estoque != null) {

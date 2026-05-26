@@ -66,7 +66,7 @@ def _columns() -> list[dict]:
 		{"label": _("Pago?"), "fieldname": "pago", "fieldtype": "Data", "width": 90},
 		{"label": _("Local"), "fieldname": "modalidade", "fieldtype": "Data", "width": 110},
 		{"label": _("Situação"), "fieldname": "situacao", "fieldtype": "Data", "width": 160},
-		{"label": _("Atendimento"), "fieldname": "atendimento", "fieldtype": "Data", "width": 130},
+		{"label": _("CRM"), "fieldname": "atendimento", "fieldtype": "Data", "width": 80},
 		{"label": _("Endereço"), "fieldname": "endereco", "fieldtype": "Data", "width": 260},
 		{"label": _("Agendamento"), "fieldname": "appointment", "fieldtype": "Link", "options": "Patient Appointment", "width": 140},
 	]
