@@ -4,14 +4,14 @@ Resumo operacional dos atendimentos de vacinação num horizonte de datas
 (Hoje / Esta semana / Este mês / Personalizado). Uma linha por vacina de cada
 Patient Appointment, com: paciente, vacina, dose, estoque da vacina, se está
 pago, modalidade (Clínica/Domiciliar), endereço, situação operacional e um
-botão de WhatsApp que abre a conversa do paciente no CRM.
+botão de Atendimento que abre a comunicação com o paciente via Lead no CRM.
 
 Reuso (ver feedback_reuse_first): parte do Patient Appointment nativo + child
 ``imun_vaccines`` (Imunocare Appointment Vaccine), estoque do ``Bin`` via
 ``imunocare_clinic_ext.api.dashboard.estoque_da_vacina`` e "pago" dos campos
 nativos do appointment. Nada de controle paralelo.
 
-A renderização (cores, botão WhatsApp→CRM, presets de data, largura total)
+A renderização (cores, botão Atendimento→CRM, presets de data, largura total)
 fica no ``agenda_de_imunização.js`` — em arquivo do app, carregado em runtime,
 sem build de assets.
 """
@@ -66,7 +66,7 @@ def _columns() -> list[dict]:
 		{"label": _("Pago?"), "fieldname": "pago", "fieldtype": "Data", "width": 90},
 		{"label": _("Local"), "fieldname": "modalidade", "fieldtype": "Data", "width": 110},
 		{"label": _("Situação"), "fieldname": "situacao", "fieldtype": "Data", "width": 160},
-		{"label": _("WhatsApp"), "fieldname": "whatsapp", "fieldtype": "Data", "width": 120},
+		{"label": _("Atendimento"), "fieldname": "atendimento", "fieldtype": "Data", "width": 130},
 		{"label": _("Endereço"), "fieldname": "endereco", "fieldtype": "Data", "width": 260},
 		{"label": _("Agendamento"), "fieldname": "appointment", "fieldtype": "Link", "options": "Patient Appointment", "width": 140},
 	]
@@ -135,9 +135,9 @@ def _data(filters: frappe._dict, de, ate) -> list[dict]:
 				# Flag (sem coluna) consumida pelo .js: dobra o alerta de
 				# "pago e atrasado" dentro da própria coluna Situação.
 				"pago_atrasado": 1 if (atrasado and pago) else 0,
-				# A coluna WhatsApp é renderizada pelo .js a partir de "patient"
-				# (abre o Lead no CRM). Mantém o paciente acessível na célula.
-				"whatsapp": r.patient,
+				# A coluna Atendimento é renderizada pelo .js a partir de "patient"
+				# (abre a comunicação com o paciente via Lead no CRM).
+				"atendimento": r.patient,
 				"endereco": r.endereco,
 			}
 		)

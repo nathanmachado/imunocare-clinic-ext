@@ -1,4 +1,4 @@
-// Agenda de Imunização (Fase 10) — filtros, cores, WhatsApp→CRM e largura total.
+// Agenda de Imunização (Fase 10) — filtros, cores, Atendimento→CRM e largura total.
 // Carregado em runtime pelo report view; não depende de build de assets.
 
 // Abre (ou cria, no clique) o Lead do paciente no CRM e navega até a conversa.
@@ -62,12 +62,14 @@ frappe.query_reports["Agenda de Imunização"] = {
 	formatter(value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
 
-		if (column.fieldname === "whatsapp" && data && data.whatsapp) {
-			// data.whatsapp carrega o paciente; o clique resolve o Lead no CRM.
-			const p = frappe.utils.escape_html(data.whatsapp);
-			return `<button type="button" class="btn btn-xs btn-success imun-wa-crm"
-				data-patient="${p}" style="white-space:nowrap">
-				<i class="fa fa-whatsapp"></i> WhatsApp</button>`;
+		if (column.fieldname === "atendimento" && data && data.atendimento) {
+			// data.atendimento carrega o paciente; o clique abre a comunicação
+			// com o paciente via Lead no CRM (canal definido lá dentro).
+			const p = frappe.utils.escape_html(data.atendimento);
+			return `<button type="button" class="btn btn-xs btn-primary imun-crm-open"
+				data-patient="${p}" style="white-space:nowrap"
+				title="${__("Abrir comunicação com o paciente no CRM")}">
+				<i class="fa fa-comments"></i> ${__("Atender")}</button>`;
 		}
 
 		if (column.fieldname === "estoque" && data && data.estoque != null) {
@@ -118,11 +120,11 @@ frappe.query_reports["Agenda de Imunização"] = {
 			}
 		});
 
-		// Botão WhatsApp → abre o Lead do paciente no CRM (delegação: sobrevive
-		// ao re-render do datatable a cada refresh/filtro).
+		// Botão Atender → abre a comunicação com o paciente via Lead no CRM
+		// (delegação: sobrevive ao re-render do datatable a cada refresh/filtro).
 		$(report.page.wrapper)
-			.off("click.imunwa")
-			.on("click.imunwa", ".imun-wa-crm", function () {
+			.off("click.imuncrm")
+			.on("click.imuncrm", ".imun-crm-open", function () {
 				imunocare_abrir_lead_crm($(this).data("patient"));
 			});
 	},

@@ -102,9 +102,10 @@ class TestFase10Dashboard(FrappeTestCase):
 	def test_execute_retorna_colunas_e_lista(self):
 		columns, data = execute({"periodo": "Este mês"})
 		fieldnames = {c["fieldname"] for c in columns}
-		for esperado in ("appointment_datetime", "patient", "medication", "estoque", "pago", "modalidade", "situacao", "whatsapp"):
+		for esperado in ("appointment_datetime", "patient", "medication", "estoque", "pago", "modalidade", "situacao", "atendimento"):
 			self.assertIn(esperado, fieldnames)
-		# Coluna "Nome" (patient_name) e "Alerta" foram removidas (redundância/vazio).
+		# "Nome" (patient_name) e "Alerta" removidas; "WhatsApp" virou "Atendimento".
 		self.assertNotIn("patient_name", fieldnames)
 		self.assertNotIn("alerta", fieldnames)
+		self.assertNotIn("whatsapp", fieldnames)
 		self.assertIsInstance(data, list)
