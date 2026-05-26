@@ -85,7 +85,9 @@ class TestFase10Dashboard(FrappeTestCase):
 		self.assertEqual(_situacao(frappe._dict(status="Open", appointment_date=hoje), hoje), "Hoje")
 		self.assertEqual(_situacao(frappe._dict(status="Open", appointment_date=amanha), hoje), "Futuro")
 		self.assertEqual(_situacao(frappe._dict(status="Closed", appointment_date=ontem), hoje), "Realizado")
-		self.assertEqual(_situacao(frappe._dict(status="Cancelled", appointment_date=ontem), hoje), "Cancelado/Falta")
+		self.assertEqual(_situacao(frappe._dict(status="Cancelled", appointment_date=ontem), hoje), "Cancelado")
+		# Healthcare empurra vencidos não atendidos para "No Show" → conta como Atrasado.
+		self.assertEqual(_situacao(frappe._dict(status="No Show", appointment_date=ontem), hoje), "Atrasado")
 
 	def test_wa_link_normaliza_telefone(self):
 		link = _wa_link(frappe._dict(mobile="(11) 93333-3333", patient_name="Maria Silva",

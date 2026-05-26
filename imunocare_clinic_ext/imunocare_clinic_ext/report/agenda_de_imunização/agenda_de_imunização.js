@@ -66,7 +66,7 @@ frappe.query_reports["Agenda de Imunização"] = {
 			cores[__("Hoje")] = "blue";
 			cores[__("Futuro")] = "gray";
 			cores[__("Realizado")] = "green";
-			cores[__("Cancelado/Falta")] = "gray";
+			cores[__("Cancelado")] = "gray";
 			return `<span class="indicator-pill ${cores[data.situacao] || "gray"}">${value}</span>`;
 		}
 

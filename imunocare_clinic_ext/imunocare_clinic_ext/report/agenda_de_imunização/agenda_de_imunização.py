@@ -25,7 +25,7 @@ from frappe import _
 from frappe.utils import get_first_day, get_last_day, getdate, nowdate
 
 from imunocare_clinic_ext.api.dashboard import (
-	STATUS_ENCERRADO,
+	STATUS_CANCELADO,
 	STATUS_REALIZADO,
 	_is_pago,
 	estoque_da_vacina,
@@ -154,9 +154,16 @@ def _data(filters: frappe._dict, de, ate) -> list[dict]:
 
 
 def _situacao(r, hoje) -> str:
+	"""Situação operacional, dirigida pela data.
+
+	Só estados terminais escapam da regra de data: ``Cancelled`` (cancelado de
+	propósito) e realizado (``Closed``/``Checked Out``). Todo o resto vencido —
+	inclusive ``No Show``, para onde o Healthcare empurra agendamentos não
+	atendidos — conta como **Atrasado**.
+	"""
 	status = r.get("status")
-	if status in STATUS_ENCERRADO:
-		return _("Cancelado/Falta")
+	if status in STATUS_CANCELADO:
+		return _("Cancelado")
 	if status in STATUS_REALIZADO:
 		return _("Realizado")
 	data = getdate(r.get("appointment_date")) if r.get("appointment_date") else None

@@ -18,8 +18,13 @@ from frappe.utils import nowdate
 
 # Status do Patient Appointment que indicam atendimento já realizado.
 STATUS_REALIZADO = ("Closed", "Checked Out")
-# Status que tiram o agendamento da fila (não contam como atraso operacional).
-STATUS_ENCERRADO = ("Cancelled", "No Show")
+# Cancelamento explícito: não é atraso (foi deliberadamente cancelado).
+STATUS_CANCELADO = ("Cancelled",)
+# Estados terminais que NÃO são risco de atraso (realizado ou cancelado).
+# Atenção: "No Show" NÃO entra aqui — o Healthcare força todo agendamento
+# vencido e não atendido para "No Show" (set_status), então "No Show" + pago
+# é justamente o atendimento atrasado que já foi pago e não aconteceu.
+STATUS_NAO_RISCO = STATUS_REALIZADO + STATUS_CANCELADO
 
 
 def estoque_da_vacina(medication: str | None) -> float:
@@ -77,7 +82,7 @@ def atrasados_pagos() -> int:
 		"Patient Appointment",
 		filters={
 			"appointment_date": ("<", hoje),
-			"status": ("not in", STATUS_REALIZADO + STATUS_ENCERRADO),
+			"status": ("not in", STATUS_NAO_RISCO),
 		},
 		fields=["name", "invoiced", "paid_amount", "ref_sales_invoice"],
 	)
