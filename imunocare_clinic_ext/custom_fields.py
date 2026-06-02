@@ -312,6 +312,15 @@ CUSTOM_FIELDS = {
 			"read_only": 1,
 			"hidden": 1,
 		},
+		{
+			"fieldname": "imun_stock_entry",
+			"label": "Baixa de Estoque",
+			"fieldtype": "Link",
+			"options": "Stock Entry",
+			"insert_after": "rnds_payload",
+			"read_only": 1,
+			"description": "Stock Entry (Material Issue) gerado na aplicação. Atualizado automaticamente.",
+		},
 	],
 	"Patient Appointment": [
 		{

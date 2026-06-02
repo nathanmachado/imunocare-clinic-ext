@@ -112,7 +112,7 @@ fixtures = [
 				# Drug Prescription (Fase 2)
 				"lote", "fabricante", "validade_lote",
 				"local_anatomico_aplicado", "via_administracao_aplicada",
-				"rnds_status", "rnds_id", "rnds_payload",
+				"rnds_status", "rnds_id", "rnds_payload", "imun_stock_entry",
 				# Patient Appointment (Fase 2 + Fase 7)
 				"imun_modalidade", "imun_application_address_display", "imun_vaccines",
 				# Treatment Plan Template + Medication Request (Fase 5)
@@ -196,6 +196,7 @@ doc_events = {
 	},
 	"Patient Encounter": {
 		"on_update": "imunocare_clinic_ext.encounter_hooks.on_update",
+		"on_submit": "imunocare_clinic_ext.stock_immunization.on_encounter_submit",
 	},
 	"Healthcare Practitioner": {
 		"validate": "imunocare_clinic_ext.practitioner_hooks.validate",
