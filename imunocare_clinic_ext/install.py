@@ -44,19 +44,25 @@ OBSOLETE_CUSTOM_FIELDS = [
 
 
 def install_imunization_customizations() -> None:
-	"""Instala/atualiza custom fields + property setters + seed PNI do domínio.
+	"""Instala/atualiza custom fields + property setters do domínio.
 
 	Idempotente:
 	- ``create_custom_fields`` faz upsert por (dt, fieldname).
 	- ``make_property_setter`` faz upsert por (doctype, field, property).
-	- ``seed_pni_2026`` checa existência antes de criar cada Item/Medication/
-	  Therapy Type/Therapy Plan Template.
 
-	Após custom fields, faz ``frappe.clear_cache`` para que o seed enxergue
-	o novo schema (campos como ``is_vaccine`` em Medication).
+	O seed do catálogo PNI (``seed.seed_pni_2026``) foi DESATIVADO fora de
+	testes em 2026-06-06: os cadastros de validação foram apagados de produção
+	e o catálogo (Item/Medication/Therapy Type/Template) passou a ser mantido
+	manualmente pelo operador, com nomes corretos. Nos testes o seed continua
+	rodando (catálogo de referência das suítes Fase 2/5/10/12).
 	"""
 	create_custom_fields(CUSTOM_FIELDS, update=True)
 	_remove_obsolete_fields()
+	if frappe.flags.in_test:
+		# Import tardio: o seed precisa dos custom fields já no schema.
+		from imunocare_clinic_ext.seed import seed_pni_2026
+
+		seed_pni_2026()
 	_apply_property_setters()
 	_register_patient_history_doctypes()
 	_ensure_empresarial_price_list()
@@ -91,11 +97,6 @@ def _remove_obsolete_fields() -> None:
 		name = frappe.db.get_value("Custom Field", {"dt": dt, "fieldname": fieldname})
 		if name:
 			frappe.delete_doc("Custom Field", name, ignore_permissions=True, force=True)
-
-	# Import tardio: seed precisa que os custom fields existam no schema.
-	from imunocare_clinic_ext.seed import seed_pni_2026
-
-	seed_pni_2026()
 
 
 def _apply_property_setters() -> None:

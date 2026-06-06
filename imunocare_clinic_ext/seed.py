@@ -1,4 +1,4 @@
-"""Seed do calendário PNI 2026 (Fase 1) — idempotente.
+"""Seed do calendário PNI 2026 (Fase 1) — idempotente. **Só roda em testes.**
 
 Cria/atualiza Items, Medications (is_vaccine=1), Therapy Types e Therapy Plan
 Templates (is_pni=1) a partir de ``data/pni_2026.py``.
@@ -6,7 +6,12 @@ Templates (is_pni=1) a partir de ``data/pni_2026.py``.
 Idempotência: cada peça é criada apenas se ainda não existir (lookup por
 nome). Custom fields aplicados separadamente em ``install.install_imunization_customizations``.
 
-Chamado por ``after_install`` (uma vez) e por ``after_migrate`` (cobertura).
+DESATIVADO fora de testes em 2026-06-06: os cadastros semeados eram de
+validação e foram apagados de produção; o catálogo passou a ser mantido
+manualmente pelo operador com os nomes corretos. Em ``frappe.flags.in_test``
+o install ainda chama o seed (as suítes Fase 2/5/10/12 dependem do catálogo
+de referência). Rodável manualmente via
+``bench execute imunocare_clinic_ext.seed.seed_pni_2026`` se um dia for útil.
 """
 
 from __future__ import annotations
