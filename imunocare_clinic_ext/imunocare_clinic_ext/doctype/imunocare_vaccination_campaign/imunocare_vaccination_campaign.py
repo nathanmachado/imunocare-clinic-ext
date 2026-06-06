@@ -31,14 +31,13 @@ class ImunocareVaccinationCampaign(Document):
 
 
 def _preco_da_vacina(medication: str | None, price_list: str | None) -> float:
-	"""Preço unitário da dose: Item Price (price_list) do Item vinculado à vacina."""
+	"""Preço unitário da dose: Item Price (price_list) do item de COBRANÇA da
+	vacina (o de serviço — modelo 2026-06-06, preço cheio na aplicação)."""
+	from imunocare_clinic_ext.medication_items import item_de_cobranca
+
 	if not medication or not price_list:
 		return 0.0
-	item_code = frappe.db.get_value(
-		"Medication Linked Item",
-		{"parent": medication, "parenttype": "Medication"},
-		"item_code",
-	)
+	item_code = item_de_cobranca(medication)
 	if not item_code:
 		return 0.0
 	rate = frappe.db.get_value(

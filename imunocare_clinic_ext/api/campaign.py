@@ -36,11 +36,11 @@ def _so_digitos(valor: str | None) -> str:
 
 
 def _item_code_da_vacina(medication: str) -> str | None:
-	return frappe.db.get_value(
-		"Medication Linked Item",
-		{"parent": medication, "parenttype": "Medication"},
-		"item_code",
-	)
+	"""Item FATURADO na campanha = o de SERVIÇO da vacina (modelo 2026-06-06:
+	insumo estocável nunca vai à fatura; a NFS-e sai sobre o serviço)."""
+	from imunocare_clinic_ext.medication_items import item_de_cobranca
+
+	return item_de_cobranca(medication)
 
 
 # ---------------------------------------------------------------------------
