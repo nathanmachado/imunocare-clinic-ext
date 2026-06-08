@@ -230,6 +230,39 @@ class TestBaixaPorLote(FrappeTestCase):
 		self.assertFalse(frappe.db.get_value("Drug Prescription", dp.name, "imun_stock_entry"))
 
 
+class TestInsumoNaoFaturavelPermaneceAtivo(FrappeTestCase):
+	"""O on_update nativo do Medication desativa toda linha não-faturável; o hook
+	imunocare (medication_hooks) reabilita o insumo (item de estoque) — senão ele
+	some do De-Para da NF-e e trava entrada/baixa (item disabled não transaciona)."""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		install_imunization_customizations()
+		cls.company = frappe.db.get_value("Company", {}, "name")
+		cls.warehouse = _ensure_warehouse(cls.company)
+
+	def test_insumo_nao_faturavel_continua_ativo_apos_insert(self):
+		insumo = _ensure_item_lotado("imun-test-insumo-ativo", self.company, self.warehouse)
+		servico = _ensure_item_servico("imun-test-servico-ativo")
+		_medication_com_billable(
+			"Vacina Insumo Ativo Teste", [(insumo, 0), (servico, 1)])  # insumo NÃO faturável
+		self.assertFalse(
+			frappe.db.get_value("Item", insumo, "disabled"),
+			"insumo não-faturável foi desativado pelo Medication nativo")
+		self.assertFalse(frappe.db.get_value("Item", servico, "disabled"))
+
+	def test_reabilita_a_cada_save(self):
+		insumo = _ensure_item_lotado("imun-test-insumo-resave", self.company, self.warehouse)
+		nome = _medication_com_billable("Vacina Resave Teste", [(insumo, 0)])
+		# simula um novo save do Medication (cenário real: editar o cadastro)
+		frappe.db.set_value("Item", insumo, "disabled", 1)
+		med = frappe.get_doc("Medication", nome)
+		med.flags.ignore_mandatory = True
+		med.save(ignore_permissions=True)
+		self.assertFalse(frappe.db.get_value("Item", insumo, "disabled"))
+
+
 def _ensure_item_lotado(code: str, company: str, warehouse: str) -> str:
 	if not frappe.db.exists("Item", code):
 		frappe.get_doc({
@@ -260,6 +293,23 @@ def _ensure_medication_vacina(nome: str, item_codes: list[str]) -> str:
 	for code in item_codes:
 		m.append("linked_items", {
 			"item_code": code, "item_group": "All Item Groups", "stock_uom": "Unidade",
+		})
+	m.flags.ignore_mandatory = True
+	m.insert(ignore_permissions=True)
+	return m.name
+
+
+def _medication_com_billable(nome: str, rows: list[tuple[str, int]]) -> str:
+	"""Cria Medication com is_billable controlado por linha. rows = [(item_code, is_billable), ...]."""
+	if frappe.db.exists("Medication", nome):
+		return nome
+	m = frappe.new_doc("Medication")
+	m.generic_name = nome
+	m.is_vaccine = 1
+	for code, billable in rows:
+		m.append("linked_items", {
+			"item_code": code, "item_group": "All Item Groups",
+			"stock_uom": "Unidade", "is_billable": billable,
 		})
 	m.flags.ignore_mandatory = True
 	m.insert(ignore_permissions=True)

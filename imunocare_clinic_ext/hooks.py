@@ -198,6 +198,11 @@ doc_events = {
 		"on_update": "imunocare_clinic_ext.encounter_hooks.on_update",
 		"on_submit": "imunocare_clinic_ext.stock_immunization.on_encounter_submit",
 	},
+	"Medication": {
+		# Reabilita o insumo (item de estoque) que o on_update nativo desativa
+		# por não ser faturável — ver medication_hooks.py.
+		"on_update": "imunocare_clinic_ext.medication_hooks.on_update",
+	},
 	"Healthcare Practitioner": {
 		"validate": "imunocare_clinic_ext.practitioner_hooks.validate",
 	},
